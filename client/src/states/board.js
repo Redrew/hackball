@@ -156,6 +156,11 @@ Board.Projector = class extends Layer {
         2
       );
 
+    // Render Ping
+    context
+      .fillWith(Color.Hex.WHITE)
+      .setFontSize(8)
+      .drawText(`Ping: ${Client.ping}`, new Vec2(0, 0));
     // Render goals
     // context.strokeWith(Color.Hex.WHITE);
     // _.each(this.goals, goal => {
