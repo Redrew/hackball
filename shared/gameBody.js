@@ -61,7 +61,7 @@ class PlayerBody extends Body {
   }
 
   _frozen() {
-    // to be implemented
+    this.caughtCorona = true;
   }
 }
 
