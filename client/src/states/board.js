@@ -16,6 +16,7 @@ import Table from "../ui/table";
 
 import Message from "../engine/message";
 import Client from "../multiplayer/client";
+import { entitiesFromArray, Body } from "../../../shared/gameBody";
 
 /**
  * Core game state, it shows rooms gameplay
@@ -75,9 +76,9 @@ export default class Board extends State {
 
     // Get room changes
     listeners["roomUpdate"] = (data) => {
-      if (this.projector)
-        this.projector.children = _.chunk(new Float32Array(data), 6);
-      //console.log(this.projector.children);
+      if (this.projector) {
+        this.projector.bodies = entitiesFromArray(new Float32Array(data));
+      }
     };
 
     return listeners;
@@ -196,64 +197,40 @@ Board.Projector = class extends Layer {
 
     // Render players
     context.setFontSize(16);
-    _.each(this.children, (player, index) => {
-
-      if (player.length == 6) {
-        if (player[4] != 0.0 && player[5] != 0.0) {
-          console.log(player);
-          this.prev_mouse_pos_x = player[4];
-          this.prev_mouse_pos_y = player[5];
-        }
-        player.pop();
-        player.pop();
-      }
-      let isBall = player[3] & 0b100;
+    _.each(this.bodies, (body, index) => {
+      let isBall = body.type === Body.TYPES.BALL;
+      let circle = body.circle;
       // Position
-      this.tile.rect.xy = player;
-      this.tile.rect.w = this.tile.rect.h = player[2] * 2;
+      this.tile.rect.xy = circle.xy;
+      this.tile.rect.w = this.tile.rect.h = circle.r * 2;
 
       // Render sprite
-      this.tile.tileIndex.xy = [isBall ? 1 : player[3] & 0b011, 0];
+      this.tile.tileIndex.xy = [isBall ? 1 : body.team == 1 ? 0 : 2, 0];
       this.tile.draw(context);
 
       // Draw index
       if (!isBall) {
-        var newarray = player.slice();
-        newarray[2] = 12;
-        var delta_x = this.prev_mouse_pos_x - newarray[0];
-        var delta_y = this.prev_mouse_pos_y - newarray[1];
-        var ratio = delta_x / delta_y;
-        newarray[0] = newarray[0] + delta_x;
-        newarray[1] = newarray[1] + delta_y;
-        newarray[3] = 4;
-        this.tile2.rect.xy = newarray;
-        this.tile2.rect.w = this.tile2.rect.h = newarray[2] * 2;
-        this.tile2.tileIndex.xy = [!isBall ? 1 : newarray[3] & 0b011, 0];
-        this.tile2.draw(context);
-
         context
           .fillWith(Color.Hex.WHITE)
           .drawText(
             index,
             new Vec2(
-              this.tile.rect.x + player[2] - 5,
+              this.tile.rect.x + circle.r - 5,
               this.tile.rect.y + this.tile.rect.h - 7
             )
           );
+
+        // Add outline if the player has a ball
+        if (body.hasBall) {
+          context
+            .strokeWith(Color.Hex.WHITE)
+            .strokeCircle(
+              new Vec2(this.tile.rect.x + circle.r, this.tile.rect.y + circle.r),
+              circle.r,
+              4
+            );
+        }
       }
-      // Check flags
-      let flags = (player[3] >> 3) & 0b111;
-      if (flags & 2)
-        context
-          .strokeWith(Color.Hex.WHITE)
-          .strokeCircle(
-            new Vec2(
-              this.tile.rect.x + player[2],
-              this.tile.rect.y + player[2]
-            ),
-            player[2],
-            4
-          );
     });
 
     ctx.restore();
@@ -299,7 +276,6 @@ Board.Projector = class extends Layer {
       }
     } else if (event.isMouseEvent()) {
       const canvasOffset = new Vec2(this.rect.w / 2 - this.board.w / 2, 50);
-      console.log(canvasOffset)
       const canvasCoords = event.data.clone().subtract(canvasOffset);
       switch (event.type) {
         case Message.Type.MOUSE_MOVE:
@@ -333,7 +309,6 @@ Board.SettingsPopup = class extends Popup {
 
   /**
    * Get selected player from teams listBoxes
-   * @returns {Player}
    */
   get selectedPlayer() {
     return (

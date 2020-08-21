@@ -314,10 +314,6 @@ class Room {
     const players = this.omitTeam(Room.Teams.SPECTATORS);
     const entities = _.concat(players, this.balls);
 
-    // Socket data [x, y, r, flag, mouse_position_x, mouse_position_y]
-    let packSize = 6,
-      socketData = new Float32Array(entities.length * packSize);
-
     _.each(entities, (entity, index) => {
       let circle = entity.body.circle,
         v = entity.body.v,
@@ -359,26 +355,16 @@ class Room {
 
       let mouse_pos_x = entity.mouse_position_x || 0.0;
       let mouse_pos_y = entity.mouse_position_y || 0.0;
-      socketData.set(
-        [
-          /** position */
-          circle.x,
-          circle.y,
-          circle.r,
-          flags,
-          mouse_pos_x,
-          mouse_pos_y /** todo: More flags */,
-        ],
-        index * packSize
-      );
-      //
-      ///**
-      // * Data in buffer is compressed, player must
-      // * know which from the list is player
-      // * todo: Fix it, merge with roomSettings
-      // */
-      //player.socket("roomPlayerIndex", index);
     });
+
+    const bodiesToRender = [];
+    entities.forEach(entity => {
+      var body = entity.body;
+      if (body.type === ge.Body.TYPES.BALL && body.pickedUp) 
+        return;
+      bodiesToRender.push(body);
+    })
+    const socketData = ge.entitiesToArray(bodiesToRender);
 
     // Broadcast
     this.broadcast("roomUpdate", socketData.buffer);
