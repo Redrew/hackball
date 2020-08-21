@@ -71,6 +71,7 @@ class BallBody extends Body {
     this.type = Body.TYPES.BALL;
     this.id = id;
     this.pickedUp = false;
+    this.active = false;
 
     // Sent to client
     this.team = null;

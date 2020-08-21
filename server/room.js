@@ -210,12 +210,7 @@ class Room {
   }
 
   _checkBallCollisions(entities, index) {
-    // if picked up, return because no collision
-    if (entities[index].body.pickedUp) {
-      return;
-    }
-
-    // index is always a ball
+    // index is always an ACTIVE ball
     let ball = entities[index].body,
       ballCircle = ball.circle,
       ballV = ball.v,
@@ -227,6 +222,7 @@ class Room {
         entityCircle = entity.circle,
         entityV = entity.v,
         isBall = entity.type === ge.Body.TYPES.BALL,
+        isActive = isBall && entity.active;
       
       // skip itself
       if (i === index) continue;
@@ -331,14 +327,20 @@ class Room {
       let circle = entity.circle,
         v = entity.v,
         isBall = entity.type === ge.Body.TYPES.BALL,
+        isActive = isBall && entity.active;
         isCivilian = entity.type === ge.Body.TYPES.CIVILIAN,
         isMedic = entity.type === ge.Body.TYPES.MEDIC,
         isJacinda = entity.type === ge.Body.TYPES.JACINDA;
-      
-      // Check collisions between balls and players/balls
-      if (isBall) this._checkBallCollisions(entities, index);
 
-      // Check collisions between players
+      // if entity is an ACTIVE ball and its velociy is small, mark it inactive
+      if (isActive && entity.v.length < 0.01) {
+        entity.active = false;
+      }
+
+      // Check collisions between ACTIVE balls and players/balls (hit by)
+      if (isBall && isActive) this._checkBallCollisions(entities, index);
+
+      // Check collisions between players and players/balls (pickup/throw)
       if (!isBall) this._checkPlayerCollisions(entities, index);
 
       // Check collisions with goals
