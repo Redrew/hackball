@@ -71,6 +71,7 @@ class PlayerBody extends Body {
 
   _frozen() {
     this.caughtCorona = true;
+    console.log("caught");
   }
 }
 
