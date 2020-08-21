@@ -7,23 +7,6 @@ const { Vec2, Circle, Rect } = require("../shared/math"),
   io = require("../app"),
   ge = require("../shared/gameBody");
 console.log(config);
-/**
- * Body showed on board
- * @class
- */
-// class BoardBody {
-//   constructor(room, circle, v, type = BoardBody.TYPES.PLAYER) {
-//     this.circle = circle;
-//     this.v = v || new Vec2();
-//     this.room = room;
-//     this.type = type;
-//   }
-// }
-
-// BoardBody.TYPES = {
-//   PLAYER: 0,
-//   BALL: 1,
-// };
 
 /**
  * Room class
@@ -227,26 +210,36 @@ class Room {
   }
 
   _checkBallCollisions(entities, index) {
-    if (entities[index].body.pickedUp) {
-      return;
-    }
-    let ball1 = entities[index].body,
-      ballCircle1 = ball1.circle.center,
+    // index is always a ball
+    let ball = entities[index].body,
+      ballCircle = ball.circle,
+      ballV = ball.v,
       hasCollision = false;
 
     // collision between ball with every other entity
     for (let i = 0; i < entities.length; ++i) {
+      let entity = entities[i],
+        entityCircle = entity.circle,
+        entityV = entity.v,
+        isBall = entity.type === ge.Body.TYPES.BALL,
+      
       // skip itself
       if (i === index) continue;
-      // collision between ball and player
-      else if (entities[i].body.type === BoardBody.TYPES.PLAYER) {
-        let player = entities[i].body,
-          playerCircle = player.circle.center;
-      }
-      // collision between ball and ball
-      else if (entities[i].body.type === BoardBody.TYPES.BALL) {
-        let ball2 = entities[i].body,
-          ballCircle2 = ball2.circle.center;
+
+      // if there is a collision
+      if (ballCircle.intersect(entityCircle)) {
+        // collion between ball and player
+        if (!isBall) {
+          // no matter who you are or what team you are on,
+          // if you are healthy and hit with a ball, you are frozen
+          if (!entity.caughtCorona) {
+            entity.frozen();
+          } 
+        }
+        // collision between ball and ball
+        else {
+          // to be implemented: both balls either cancel out or roll away?
+        }
       }
     }
   }
@@ -330,19 +323,18 @@ class Room {
       socketData = new Float32Array(entities.length * packSize);
 
     _.each(entities, (entity, index) => {
-      let circle = entity.body.circle,
-        v = entity.body.v,
-        isBall = entity.body.type === ge.Body.TYPES.BALL;
-        isCivilian = entity.body.type === ge.Body.TYPES.CIVILIAN;
-        isMedic = entity.body.type === ge.Body.TYPES.MEDIC;
-        isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
+      let circle = entity.circle,
+        v = entity.v,
+        isBall = entity.type === ge.Body.TYPES.BALL,
+        isCivilian = entity.type === ge.Body.TYPES.CIVILIAN,
+        isMedic = entity.type === ge.Body.TYPES.MEDIC,
+        isJacinda = entity.type === ge.Body.TYPES.JACINDA;
       
+      // Check collisions between balls and players/balls
+      if (isBall) this._checkBallCollisions(entities, index);
 
       // Check collisions between players
       if (!isBall) this._checkPlayerCollisions(entities, index);
-
-      // Check collisions between balls and players/balls
-      if (isBall) this._checkBallCollisions(entities, index);
 
       // Check collisions with goals
 

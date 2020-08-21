@@ -37,6 +37,8 @@ class PlayerBody extends Body {
     this.moving = false;
 
     // Sent to client
+    this.wearingMask = false;
+    this.caughtCorona = false;
     this.hasBall = false;
     this.pickUp = false;
     this.throw = false;
@@ -56,6 +58,10 @@ class PlayerBody extends Body {
     const subpack = pack.slice(4);
     [this.hasBall, this.pickUp, this.throw] = decodeNumArray(subpack, 3);
     return obj;
+  }
+
+  _frozen() {
+    // to be implemented
   }
 }
 
@@ -201,7 +207,6 @@ class JacindaBody extends CivilianBody {
   constructor(circle, v) {
     super(circle, v);
     this.type = Body.TYPES.JACINDA;
-    this.curingPlayer = false;
     this.speed = 1.5;
     this.inParliament = false;
   }
