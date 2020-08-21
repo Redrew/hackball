@@ -324,17 +324,17 @@ class Room {
       socketData = new Float32Array(entities.length * packSize);
 
     _.each(entities, (entity, index) => {
-      let circle = entity.circle,
-        v = entity.v,
-        isBall = entity.type === ge.Body.TYPES.BALL,
-        isActive = isBall && entity.active;
-        isCivilian = entity.type === ge.Body.TYPES.CIVILIAN,
-        isMedic = entity.type === ge.Body.TYPES.MEDIC,
-        isJacinda = entity.type === ge.Body.TYPES.JACINDA;
+      let circle = entity.body.circle,
+        v = entity.body.v,
+        isBall = entity.body.type === ge.Body.TYPES.BALL,
+        isActive = isBall && entity.body.active,
+        isCivilian = entity.body.type === ge.Body.TYPES.CIVILIAN,
+        isMedic = entity.body.type === ge.Body.TYPES.MEDIC,
+        isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
 
       // if entity is an ACTIVE ball and its velociy is small, mark it inactive
-      if (isActive && entity.v.length < 0.01) {
-        entity.active = false;
+      if (isActive && entity.body.v.length < 0.01) {
+        entity.body.active = false;
       }
 
       // Check collisions between ACTIVE balls and players/balls (hit by)
@@ -408,12 +408,11 @@ class Room {
    */
   start() {
     // Creating new player bodies and adding to players list
-    _.assign(player, {
-      team: Room.Teams.SPECTATORS,
-      room: this,
-      body: new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0))
-    });
-
+    for (let i=0; i<this.players.length; i++) {
+      this.players[i].body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0,0));
+      this._alignOnBoard(this.players[i]);
+    }
+  
     // assign roles
 
     // Set balls
@@ -439,7 +438,7 @@ class Room {
   setTeam(player, newTeam) {
     // Create new body
     player.team = newTeam;
-    this._alignOnBoard(player)._broadcastSettings();
+    this._broadcastSettings();
     return this;
   }
 
@@ -480,6 +479,11 @@ class Room {
    * @returns {Room}
    */
   join(player) {
+    // assign the player to team and room 
+    _.assign(player, {
+      team: Room.Teams.SPECTATORS,
+      room: this
+    });
     // Join socket
     player.socket.join(this.name);
     this.players.push(player);
