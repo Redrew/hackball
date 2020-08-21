@@ -223,8 +223,8 @@ Board.Projector = class extends Layer {
         var delta_x = this.prev_mouse_pos_x - newarray[0];
         var delta_y = this.prev_mouse_pos_y - newarray[1];
         var ratio = delta_x / delta_y;
-        newarray[0] = newarray[0] + delta_x-57;
-        newarray[1] = newarray[1] + delta_y-57;
+        newarray[0] = newarray[0] + delta_x;
+        newarray[1] = newarray[1] + delta_y;
         newarray[3] = 4;
         this.tile2.rect.xy = newarray;
         this.tile2.rect.w = this.tile2.rect.h = newarray[2] * 2;
@@ -299,6 +299,7 @@ Board.Projector = class extends Layer {
       }
     } else if (event.isMouseEvent()) {
       const canvasOffset = new Vec2(this.rect.w / 2 - this.board.w / 2, 50);
+      console.log(canvasOffset)
       const canvasCoords = event.data.clone().subtract(canvasOffset);
       switch (event.type) {
         case Message.Type.MOUSE_MOVE:
@@ -428,7 +429,7 @@ Board.SettingsPopup = class extends Popup {
       });
 
     this.matchPanel
-      .add(new Button(new Rect(0, 0, 64, 0), "Jacinta"), { fill: [0, 1] })
+      .add(new Button(new Rect(0, 0, 64, 0), "Jacinda"), { fill: [0, 1] })
       .addForwarder(Message.Type.MOUSE_CLICK, () => {
         console.log("Make Jacinda");
       });
