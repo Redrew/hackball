@@ -37,6 +37,8 @@ class PlayerBody extends Body {
     this.moving = false;
 
     // Sent to client
+    this.wearingMask = false;
+    this.caughtCorona = false;
     this.hasBall = false;
     this.pickUp = false;
     this.throw = false;
@@ -57,6 +59,10 @@ class PlayerBody extends Body {
     [this.hasBall, this.pickUp, this.throw] = decodeNumArray(subpack, 3);
     return obj;
   }
+
+  _frozen() {
+    this.caughtCorona = true;
+  }
 }
 
 class BallBody extends Body {
@@ -65,6 +71,7 @@ class BallBody extends Body {
     this.type = Body.TYPES.BALL;
     this.id = id;
     this.pickedUp = false;
+    this.active = false;
 
     // Sent to client
     this.team = null;
@@ -201,7 +208,6 @@ class JacindaBody extends CivilianBody {
   constructor(circle, v) {
     super(circle, v);
     this.type = Body.TYPES.JACINDA;
-    this.curingPlayer = false;
     this.speed = 1.5;
     this.inParliament = false;
   }
@@ -267,6 +273,7 @@ function decodeNumArray(nums, length, elemsize = 8) {
 }
 
 module.exports = {
+  Body: Body,
   BallBody: BallBody,
   PlayerBody: PlayerBody,
   CivilianBody: CivilianBody,

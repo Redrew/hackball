@@ -109,7 +109,9 @@ class Player {
 
       /** Move body */
       .on("move", (dir) => {
-        if (this.body && this.body.v.length <= 1.8) this.body.v.add(dir, 0.35);
+        if (!this.body.caughtCorona) {
+          if (this.body && this.body.v.length <= 1.8) this.body.v.add(dir, 0.35);
+        }
       })
       .on("mouse_position", (vec) => {
         this.mouse_position_x = vec.x;

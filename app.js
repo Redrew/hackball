@@ -3,7 +3,7 @@ const io = require("socket.io"),
   express = require("express");
 
 // Init server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const INDEX = "/index.html";
 
 const app = express();
