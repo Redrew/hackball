@@ -37,6 +37,7 @@ class PlayerBody extends Body {
     this.moving = false;
 
     // Sent to client
+    this.team = 0;
     this.wearingMask = false;
     this.caughtCorona = false;
     this.hasBall = false;
@@ -49,14 +50,22 @@ class PlayerBody extends Body {
     array.fill(0);
     const fillin = [this.circle.x, this.circle.y, this.circle.r, this.type];
     array.set(fillin);
-    const encoded = encodeBoolArray([this.hasBall, this.pickUp, this.throw]);
+    const encoded = encodeBoolArray([
+      this.team,
+      this.hasBall,
+      this.pickUp,
+      this.throw,
+    ]);
     array.set(encoded, fillin.length);
     return array;
   }
   static fromArray(pack) {
     const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
     const subpack = pack.slice(4);
-    [this.hasBall, this.pickUp, this.throw] = decodeNumArray(subpack, 3);
+    [this.team, this.hasBall, this.pickUp, this.throw] = decodeNumArray(
+      subpack,
+      4
+    );
     return obj;
   }
 
@@ -124,6 +133,7 @@ class CivilianBody extends PlayerBody {
     const fillin = [this.circle.x, this.circle.y, this.circle.r, this.type];
     array.set(fillin);
     const encoded = encodeBoolArray([
+      this.team,
       this.hasBall,
       this.pickUp,
       this.throw,
@@ -135,10 +145,13 @@ class CivilianBody extends PlayerBody {
   static fromArray(pack) {
     const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
     const subpack = pack.slice(4);
-    [this.hasBall, this.pickUp, this.throw, this.wearingMask] = decodeNumArray(
-      subpack,
-      4
-    );
+    [
+      this.team,
+      this.hasBall,
+      this.pickUp,
+      this.throw,
+      this.wearingMask,
+    ] = decodeNumArray(subpack, 5);
     return obj;
   }
 }
@@ -181,6 +194,7 @@ class MedicBody extends CivilianBody {
     const fillin = [this.circle.x, this.circle.y, this.circle.r, this.type];
     array.set(fillin);
     const encoded = encodeBoolArray([
+      this.team,
       this.hasBall,
       this.pickUp,
       this.throw,
@@ -194,12 +208,13 @@ class MedicBody extends CivilianBody {
     const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
     const subpack = pack.slice(4);
     [
+      this.team,
       this.hasBall,
       this.pickUp,
       this.throw,
       this.wearingMask,
       this.curingPlayer,
-    ] = decodeNumArray(subpack, 5);
+    ] = decodeNumArray(subpack, 6);
     return obj;
   }
 }
@@ -279,7 +294,10 @@ module.exports = {
   CivilianBody: CivilianBody,
   MedicBody: MedicBody,
   JacindaBody: JacindaBody,
-}
+  entitiesFromArray: entitiesFromArray,
+  entitiesToArray: entitiesToArray,
+  entityFromArray: entityFromArray,
+};
 // Example of encoding and reading players
 // const player = new PlayerBody(new Circle(0, 0, 12));
 // const medic = new MedicBody(new Circle(0, 0, 12));
