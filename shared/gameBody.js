@@ -266,6 +266,13 @@ function decodeNumArray(nums, length, elemsize = 8) {
   return bools;
 }
 
+module.exports = {
+  BallBody: BallBody,
+  PlayerBody: PlayerBody,
+  CivilianBody: CivilianBody,
+  MedicBody: MedicBody,
+  JacindaBody: JacindaBody,
+}
 // Example of encoding and reading players
 // const player = new PlayerBody(new Circle(0, 0, 12));
 // const medic = new MedicBody(new Circle(0, 0, 12));
