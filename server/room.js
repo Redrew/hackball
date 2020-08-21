@@ -179,8 +179,8 @@ class Room {
             (players[index].body.hasBall===players[i] || !players[index].body.hasBall)
           ) {
               // pick up ball
-              
-              // console.log("lol");
+
+              console.log(players[index].mouse_position_x);
               players[index].body.hasBall===players[i]
               players[index].body.hasBall = players[i];
               players[i].body.pickedUp = true;

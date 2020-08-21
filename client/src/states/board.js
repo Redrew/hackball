@@ -195,9 +195,10 @@ Board.Projector = class extends Layer {
     // Render players
     context.setFontSize(16);
     _.each(this.children, (player, index) => {
-      //console.log(player);
+
       if (player.length == 6) {
         if (player[4] != 0.0 && player[5] != 0.0) {
+          console.log(player);
           this.prev_mouse_pos_x = player[4];
           this.prev_mouse_pos_y = player[5];
         }
@@ -220,8 +221,8 @@ Board.Projector = class extends Layer {
         var delta_x = this.prev_mouse_pos_x - newarray[0];
         var delta_y = this.prev_mouse_pos_y - newarray[1];
         var ratio = delta_x / delta_y;
-        newarray[0] = newarray[0] + delta_x;
-        newarray[1] = newarray[1] + delta_y;
+        newarray[0] = newarray[0] + delta_x-57;
+        newarray[1] = newarray[1] + delta_y-57;
         newarray[3] = 4;
         this.tile2.rect.xy = newarray;
         this.tile2.rect.w = this.tile2.rect.h = newarray[2] * 2;
