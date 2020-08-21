@@ -407,6 +407,13 @@ class Room {
    * Start/stop room loop
    */
   start() {
+    // Creating new player bodies and adding to players list
+    _.assign(player, {
+      team: Room.Teams.SPECTATORS,
+      room: this,
+      body: new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0))
+    });
+
     // assign roles
 
     // Set balls
@@ -473,13 +480,6 @@ class Room {
    * @returns {Room}
    */
   join(player) {
-    // Adding to list
-    _.assign(player, {
-      team: Room.Teams.SPECTATORS,
-      room: this,
-      body: new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0))
-    });
-
     // Join socket
     player.socket.join(this.name);
     this.players.push(player);
