@@ -273,6 +273,7 @@ function decodeNumArray(nums, length, elemsize = 8) {
 }
 
 module.exports = {
+  Body: Body,
   BallBody: BallBody,
   PlayerBody: PlayerBody,
   CivilianBody: CivilianBody,
