@@ -102,6 +102,8 @@ export default class Board extends State {
       fill: [1, 1],
     });
 
+    this.projector.parent = this;
+
     // UI buttons
     this.add(new Button(new Rect(0, 0, 100, 16), "Exit"), {
       align: [0, 1],
@@ -296,9 +298,11 @@ Board.Projector = class extends Layer {
           break;
       }
     } else if (event.isMouseEvent()) {
+      const canvasOffset = new Vec2(this.rect.w / 2 - this.board.w / 2, 50);
+      const canvasCoords = event.data.clone().subtract(canvasOffset);
       switch (event.type) {
         case Message.Type.MOUSE_MOVE:
-          Client.emit("mouse_position", event.data);
+          Client.emit("mouse_position", canvasCoords);
           break;
       }
     }

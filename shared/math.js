@@ -44,6 +44,18 @@ class Vec2 {
     return this;
   }
 
+  subtract(vec, mul) {
+    mul = mul || 1.0;
+    if (_.isArray(vec)) {
+      this.x -= vec[0] * mul;
+      this.y -= vec[1] * mul;
+    } else {
+      this.x -= vec.x * mul;
+      this.y -= vec.y * mul;
+    }
+    return this;
+  }
+
   /**
    * Mul by Vector
    * @param vec Vector to multi-player
