@@ -118,10 +118,9 @@ class Room {
     let p1 = players[index].body,
       c1 = p1.circle.center,
       hasCollision = false;
-    const test = false;
 
     // collision between every player with every other entity (ball and player)
-    for (let i = 0; i < players.length; ++i) {
+    for (let i = 0; i < players.length; i++) {
       if (i === index) continue;
 
       // Get center of circle of second entity
@@ -131,46 +130,43 @@ class Room {
       // If the circles are colliding
       if (p1.circle.intersect(p2.circle)) {
         // if both players
-        if (!p1.isBall && !p2.isBall) {
-          // if one has corona and the other is medic, medic saves patient
+        if (!p2.type === ge.Body.TYPES.BALL) {
           if (p1.isMedic && p2.caughtCorona) {
+            // if one has corona and the other is medic, medic saves patient
           }
-        }
-        // if player and corona
-        else {
-        }
-
-        if (!test) {
+        }else{ 
+          
+          // if player and corona
           let dist = p2.circle.distance(p1.circle),
             vx = (c2.x - c1.x) / dist,
             vy = (c2.y - c1.y) / dist;
 
           if (
-            // throw when space bar is pressed and there is a ball already picked up
-            players[i].body.type === ge.Body.TYPES.BALL &&
+            // throw when space bar is pressed and there is a corona is already picked up
+            p2.type === ge.Body.TYPES.BALL &&
             players[index].flags & 2 &&
-            players[index].body.hasBall === players[i]
+            p1.hasBall === players[i]
           ) {
-            // console.log("sdfadsfdhjsefbheabfjkfssa");
-            players[index].body.hasBall = null;
-            players[i].body.pickedUp = false;
-            vx *= 8;
-            vy *= 8;
-          } else if (
-            players[i].body.type === ge.Body.TYPES.BALL &&
-            (players[index].body.hasBall === players[i] ||
-              !players[index].body.hasBall)
-          ) {
-            // pick up ball
+            p2.active = true;
+            p2.pickedUp = false;
+            p1.hasBall = null;
 
-            // console.log("lol");
-            players[index].body.hasBall === players[i];
-            players[index].body.hasBall = players[i];
-            players[i].body.pickedUp = true;
-            players[i].body.circle.x = players[index].body.circle.x;
-            players[i].body.circle.y = players[index].body.circle.y;
-            players[i].body.v.x = players[index].body.v.x;
-            players[i].body.v.y = players[index].body.v.y;
+            vx *= 13;
+            vy *= 13;
+          } else if (
+            p2.type === ge.Body.TYPES.BALL &&
+            !p2.active &&
+            (p1.hasBall === players[i] ||
+              !p1.hasBall)
+          ) {
+            // pick up corona
+            p1.hasBall === players[i];
+            p1.hasBall = players[i];
+            p2.pickedUp = true;
+            p2.circle.x = p1.circle.x;
+            p2.circle.y = p1.circle.y;
+            p2.v.x = p1.v.x;
+            p2.v.y = p1.v.y;
             continue;
             // vx *= 8;
             //vy *= 8;
@@ -218,7 +214,7 @@ class Room {
 
     // collision between ball with every other entity
     for (let i = 0; i < entities.length; ++i) {
-      let entity = entities[i],
+      let entity = entities[i].body,
         entityCircle = entity.circle,
         entityV = entity.v,
         isBall = entity.type === ge.Body.TYPES.BALL,
@@ -234,7 +230,7 @@ class Room {
           // no matter who you are or what team you are on,
           // if you are healthy and hit with a ball, you are frozen
           if (!entity.caughtCorona) {
-            entity.frozen();
+            entity._frozen();
           } 
         }
         // collision between ball and ball
@@ -262,8 +258,7 @@ class Room {
       while (
         this._checkPlayerCollisions(
           this.players,
-          _.indexOf(this.players, player),
-          true
+          _.indexOf(this.players, player)
         )
       ) {
         let direction = this.board.center.sub(player.body.circle).normalize();
@@ -333,7 +328,7 @@ class Room {
         isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
 
       // if entity is an ACTIVE ball and its velociy is small, mark it inactive
-      if (isActive && entity.body.v.length < 0.01) {
+      if (isActive && entity.body.v.length < 0.1) {
         entity.body.active = false;
       }
 
@@ -409,9 +404,9 @@ class Room {
   start() {
     // Creating new player bodies and adding to players list
     for (let i=0; i<this.players.length; i++) {
-      this.players[i].body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0,0));
       this._alignOnBoard(this.players[i]);
     }
+
   
     // assign roles
 
@@ -482,7 +477,8 @@ class Room {
     // assign the player to team and room 
     _.assign(player, {
       team: Room.Teams.SPECTATORS,
-      room: this
+      room: this,
+      body: new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0,0))
     });
     // Join socket
     player.socket.join(this.name);
