@@ -210,6 +210,11 @@ class Room {
   }
 
   _checkBallCollisions(entities, index) {
+    // if picked up, return because no collision
+    if (entities[index].body.pickedUp) {
+      return;
+    }
+
     // index is always a ball
     let ball = entities[index].body,
       ballCircle = ball.circle,
