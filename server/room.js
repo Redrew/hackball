@@ -178,23 +178,6 @@ class Room {
             (players[index].body.hasBall === players[i] ||
               !players[index].body.hasBall)
           ) {
-<<<<<<< HEAD
-              // pick up ball
-
-              console.log(players[index].mouse_position_x);
-              players[index].body.hasBall===players[i]
-              players[index].body.hasBall = players[i];
-              players[i].body.pickedUp = true;
-              players[i].body.circle.x = players[index].body.circle.x;
-              players[i].body.circle.y = players[index].body.circle.y;
-              players[i].body.v.x = players[index].body.v.x;
-              players[i].body.v.y = players[index].body.v.y;
-              continue;
-              // vx *= 8;
-              //vy *= 8;
-          } 
-          
-=======
             // pick up ball
 
             // console.log("lol");
@@ -209,7 +192,6 @@ class Room {
             // vx *= 8;
             //vy *= 8;
           }
->>>>>>> d2dca5f3b7249723028beadae5c18a8a356dfbca
 
           // "weight"
           p1.v.mul(0.9);
