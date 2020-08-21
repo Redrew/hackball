@@ -11,19 +11,19 @@ console.log(config);
  * Body showed on board
  * @class
  */
-class BoardBody {
-  constructor(room, circle, v, type = BoardBody.TYPES.PLAYER) {
-    this.circle = circle;
-    this.v = v || new Vec2();
-    this.room = room;
-    this.type = type;
-  }
-}
+// class BoardBody {
+//   constructor(room, circle, v, type = BoardBody.TYPES.PLAYER) {
+//     this.circle = circle;
+//     this.v = v || new Vec2();
+//     this.room = room;
+//     this.type = type;
+//   }
+// }
 
-BoardBody.TYPES = {
-  PLAYER: 0,
-  BALL: 1,
-};
+// BoardBody.TYPES = {
+//   PLAYER: 0,
+//   BALL: 1,
+// };
 
 /**
  * Room class
@@ -332,12 +332,11 @@ class Room {
     _.each(entities, (entity, index) => {
       let circle = entity.body.circle,
         v = entity.body.v,
-        isBall = entity.body.type === BoardBody.TYPES.BALL;
-      // isMedic = entity.body.type === Medic;
-      // isJacinda = entity.body.type === Jacinda;
-      // Hack change, change back when class types are defined
-      var isMedic = false;
-      var isJacinda = false;
+        isBall = entity.body.type === ge.Body.TYPES.BALL;
+        isCivilian = entity.body.type === ge.Body.TYPES.CIVILIAN;
+        isMedic = entity.body.type === ge.Body.TYPES.MEDIC;
+        isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
+      
 
       // Check collisions between players
       if (!isBall) this._checkPlayerCollisions(entities, index);
@@ -401,7 +400,7 @@ class Room {
       // var y = (i + 1) * yInterval - this.ballR;
       var circle = new Circle(x, y, this.ballR);
       this.balls.push({
-        body: new BoardBody(this, circle, null, BoardBody.TYPES.BALL),
+        body: new ge.BallBody(circle, i, new Vec2(0,0)),
       });
     }
   }
@@ -479,7 +478,7 @@ class Room {
     _.assign(player, {
       team: Room.Teams.SPECTATORS,
       room: this,
-      body: new BoardBody(this, new Circle(60, 60, 13)),
+      body: new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0))
     });
 
     // Join socket
