@@ -311,40 +311,51 @@ class Room {
         for (let i=0; i<entities.length; i++) {
           // skip itself
           if (i===index) continue;
-          // skip all the balls and only check players
-          if (entities[i].body.type === ge.Body.TYPES.BALL) continue;
-          // circle2 should only be of type PLAYER
+
+          // if collision, call the body's collide function
+          // collide functions return the team that gets 1 point
           let circle2 = entities[i].body.circle;
-          if (entities[i].body.type === ge.Body.TYPES.PLAYER && 
-            circle.intersect(circle2)) {
-              entity.body.collide(entities[i]);
+          if (circle.intersect(circle2)) {
+              if (entity.body.collide(entities[i])) {
+                this._addGoal(entity.body.collide(entities[i]));
+              }
+          }
+          
+          // throw if space bar is pressed and current entity is player with ball
+          let p1 = entity.body,
+            c1 = p1.circle.center,
+            p2 = entities[i].body,
+            c2 = p2.circle.center,
+            dist = p2.circle.distance(p1.circle),
+            vx = (c2.x - c1.x) / dist,
+            vy = (c2.y - c1.y) / dist;
+
+          if (
+            p1.type === ge.Body.TYPES.PLAYER &&
+            p2.type === ge.Body.TYPES.BALL &&
+            entity.flags & 2 &&
+            p1.hasBall && p1.ballId === p2.id
+          ) {
+            p2.moving = true;
+            p2.pickedUp = false;
+            p1.hasBall = false;
+            p1.ballId = null;
+            vx *= 13;
+            vy *= 13;
           }
         }
 
-        // throw when spacebar is pressed and current player has a ball
-        if (
-          
-        )
-
+        
       // if entity is a MOVING ball and its velociy is small, mark it not moving
       if (isMoving && entity.body.v.length < 0.1) {
         entity.body.moving = false;
       }
 
-      // Check collisions between MOVING balls and players/balls (hit by)
-      if (isMoving) this._checkBallCollisions(entities, index);
+      // // Check collisions between MOVING balls and players/balls (hit by)
+      // if (isMoving) this._checkBallCollisions(entities, index);
 
-      // Check collisions between players and players/balls (pickup/throw)
-      if (!isBall) this._checkPlayerCollisions(entities, index);
-
-      // Check collisions with goals
-
-      //   // If its colliding with goal
-      //   if(collidingGoal) {
-      //     this._addGoal(collidingGoal);
-      //     return false;
-      //   }
-      // }
+      // // Check collisions between players and players/balls (pickup/throw)
+      // if (!isBall) this._checkPlayerCollisions(entities, index);
 
       // Check collisions with borders
       this._calcBordersCollisions(entity.body, !isBall && 64);

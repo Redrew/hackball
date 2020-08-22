@@ -68,21 +68,17 @@ class PlayerBody extends Body {
     return obj;
   }
 
-  _frozen() {
-    this.caughtCorona = true;
-  }
-
-  _collide(entity) {
+  collide(entity) {
     let circle = entity.body.circle,
         v = entity.body.v,
         dist = entity.body.circle.distance(this.circle),
         vx = (circle.x - this.circle.x) / dist,
         vy = (circle.y - this.circle.y) / dist,
-        isBall = entity.body.type === ge.Body.TYPES.BALL,
+        isBall = entity.body.type === Body.TYPES.BALL,
         isMoving = isBall && entity.body.moving,
-        isCivilian = entity.body.type === ge.Body.TYPES.CIVILIAN,
-        isMedic = entity.body.type === ge.Body.TYPES.MEDIC,
-        isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
+        isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
+        isMedic = entity.body.type === Body.TYPES.MEDIC,
+        isJacinda = entity.body.type === Body.TYPES.JACINDA;
     
     // collision between player and ball on floor
     if (isBall && !isMoving) {
@@ -93,22 +89,38 @@ class PlayerBody extends Body {
         this.hasBall = true;
         entity.body.pickedUp = true;
         entity.body.team = this.team;
-        entity.body.circle.x = this.circle.x;
-        entity.body.circle.y = this.circle.y;
-        entity.body.v.x = this.v.x;
-        entity.body.v.y = this.v.y;
+        circle.x = this.circle.x;
+        circle.y = this.circle.y;
+        v.x = this.v.x;
+        v.y = this.v.y;
         // not sure what the following does
-        vx *= 8;
-        vy *= 8;
+        // vx *= 8;
+        // vy *= 8;
       }
-      
     }
 
     // collision between player and moving ball
+    if (isBall && isMoving) {
+      // if player has ball or already caught corona, nothing happens
+      // otherwise, they catch corona
+      if (!this.hasBall && !this.caughtCorona) {
+        this.caughtCorona = true;
+        // ball is no longer moving
+        entity.body.moving = false;
+        // ball is on the floor again with no team
+        let ballTeam = entity.body.team;
+        entity.body.team = null;
+        console.log("ball team is not meant to be null:", ballTeam);
+        // return the ball's team to updatePhysics for scoreboard update
+        return ballTeam;
+      } 
+    }
 
     // collision between player and players
+    if (!isBall) {
+      // to be implemented along with roles
+    }
       
-
   }
 }
 
@@ -139,8 +151,31 @@ class BallBody extends Body {
     return obj;
   }
 
- 
+  collide(entity) {
+    let circle = entity.body.circle,
+        v = entity.body.v,
+        dist = entity.body.circle.distance(this.circle),
+        vx = (circle.x - this.circle.x) / dist,
+        vy = (circle.y - this.circle.y) / dist,
+        isBall = entity.body.type === Body.TYPES.BALL,
+        isMoving = isBall && entity.body.moving,
+        isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
+        isMedic = entity.body.type === Body.TYPES.MEDIC,
+        isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
+    // collide between ball and ball
+    if (isBall) {
+      // balls roll away, both balls becomes non-moving and ready for pickup
+      this.moving = false;
+      this.pickedUp = false;
+      this.team = null;
+      entity.body.moving = false;
+      entity.body.pickedUp = false;
+      entity.team = null;
+    }
+
+    // no need to check for collision between ball and player, 
+    // already done in collide() in PlayerBody
   }
 }
 
