@@ -15,10 +15,41 @@ class Body {
     this.circle = circle;
     this.v = v || new Vec2();
     this.arraySize = SIZE;
+    this.extraBoolAttrs = null;
+    this.extraNumAttrs = null;
   }
   init() {}
   update(game) {}
   collide(obj) {}
+  toArray() {
+    const array = new Float32Array(this.arraySize);
+    array.fill(0);
+    const fillin = [this.circle.x, this.circle.y, this.circle.r, this.type];
+    if (this.extraNumAttrs != null) {
+      this.extraNumAttrs.forEach((nAttr) => fillin.push(this[nAttr]));
+    }
+    array.set(fillin);
+    if (this.extraBoolAttrs != null) {
+      const attrValues = this.extraBoolAttrs.map((a) => this[a]);
+      const encoded = encodeBoolArray(attrValues);
+      array.set(encoded, fillin.length);
+    }
+    return array;
+  }
+  static fromArray(pack) {
+    const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
+    let subpack = pack.slice(PACK.type + 1);
+    if (obj.extraNumAttrs != null) {
+      obj.extraNumAttrs.forEach((nAttr, i) => (obj[nAttr] = subpack[i]));
+      subpack = subpack.slice(obj.extraNumAttrs.length);
+    }
+    if (obj.extraBoolAttrs != null) {
+      decodeNumArray(subpack, obj.extraBoolAttrs.length).forEach(
+        (v, i) => (obj[obj.extraBoolAttrs[i]] = v)
+      );
+    }
+    return obj;
+  }
 }
 
 Body.TYPES = {
@@ -35,7 +66,7 @@ class PlayerBody extends Body {
     this.flags = 0;
     this.type = Body.TYPES.PLAYER;
     this.speed = 1;
-    this.throwDirection = new Vec2(1, 0); // in radians
+    this.mousePosition = new Vec2(0, 0); // in radians
     this.ball = null;
     this.throwSpeed = 13;
 
@@ -46,6 +77,9 @@ class PlayerBody extends Body {
     this.hasBall = false;
     this.pickUp = false;
     this.throwing = false;
+
+    this.extraBoolAttrs = ["hasBall", "pickUp", "throwing"];
+    this.extraNumAttrs = ["team"];
   }
 
   update(game) {
@@ -59,42 +93,21 @@ class PlayerBody extends Body {
   throw() {
     const r = this.circle.r,
       ballr = this.ball.circle.r;
-    const spawnDistance = r + ballr;
-    var spawnLocation = this.circle
+    const throwDirection = this.mousePosition
       .clone()
-      .add(new Vec2(r - ballr, r - ballr))
-      .add(this.throwDirection, spawnDistance);
+      .sub(this.circle.center)
+      .sub([ballr, ballr])
+      .normalize();
+    const spawnDistance = r + ballr + 1;
+    var spawnLocation = this.circle.center.add(throwDirection, spawnDistance);
+    spawnLocation.r = this.ball.circle.r;
     this.ball.circle.xy = spawnLocation.xy;
-    this.ball.v = this.throwDirection.clone().mul(this.throwSpeed);
+    this.ball.v = throwDirection.clone().mul(this.throwSpeed);
     this.ball.team = this.team;
     this.ball.pickedUp = false;
     this.ball = null;
     this.hasBall = false;
   }
-  toArray() {
-    const array = new Float32Array(this.arraySize);
-    array.fill(0);
-    const fillin = [this.circle.x, this.circle.y, this.circle.r, this.type];
-    array.set(fillin);
-    const encoded = encodeBoolArray([
-      this.team,
-      this.hasBall,
-      this.pickUp,
-      this.throwing,
-    ]);
-    array.set(encoded, fillin.length);
-    return array;
-  }
-  static fromArray(pack) {
-    const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
-    const subpack = pack.slice(4);
-    [obj.team, obj.hasBall, obj.pickUp, obj.throwing] = decodeNumArray(
-      subpack,
-      4
-    );
-    return obj;
-  }
-
   collide(entity) {
     let circle = entity.body.circle,
       v = entity.body.v,
@@ -160,6 +173,9 @@ class BallBody extends Body {
     // Sent to client
     this.team = null;
     this.moving = false;
+
+    this.extraBoolAttrs = ["moving"];
+    this.extraNumAttrs = ["team"];
   }
 
   update(game) {
@@ -170,21 +186,6 @@ class BallBody extends Body {
     if (this.team != null && this.v.length > 0.1) {
       this.moving = true;
     }
-  }
-  toArray() {
-    const array = new Float32Array(this.arraySize);
-    array.fill(0);
-    const fillin = [this.circle.x, this.circle.y, this.circle.r, this.type];
-    array.set(fillin);
-    const encoded = encodeBoolArray([this.team, this.moving]);
-    array.set(encoded, fillin.length);
-    return array;
-  }
-  static fromArray(pack) {
-    const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
-    const subpack = pack.slice(4);
-    [obj.team, obj.moving] = decodeNumArray(subpack, 2);
-    return obj;
   }
 
   collide(entity) {
@@ -222,6 +223,8 @@ class CivilianBody extends PlayerBody {
 
     // Sent to client
     this.wearingMask = false;
+
+    this.extraBoolAttrs.push("wearingMask");
   }
   /**
    * attach coronavirus to player
@@ -238,41 +241,17 @@ class CivilianBody extends PlayerBody {
   _throwCorona(targetPosition) {
     // to be implemented
   }
-
-  toArray() {
-    const array = new Float32Array(this.arraySize);
-    array.fill(0);
-    const fillin = [this.circle.x, this.circle.y, this.circle.r, this.type];
-    array.set(fillin);
-    const encoded = encodeBoolArray([
-      this.team,
-      this.hasBall,
-      this.pickUp,
-      this.throwing,
-      this.wearingMask,
-    ]);
-    array.set(encoded, fillin.length);
-    return array;
-  }
-  static fromArray(pack) {
-    const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
-    const subpack = pack.slice(4);
-    [
-      obj.team,
-      obj.hasBall,
-      obj.pickUp,
-      obj.throwing,
-      obj.wearingMask,
-    ] = decodeNumArray(subpack, 5);
-    return obj;
-  }
 }
 
 class MedicBody extends CivilianBody {
   constructor(circle, v) {
     super(circle, v);
     this.type = Body.TYPES.MEDIC;
+
+    // Sent to client
     this.curingPlayer = false;
+
+    this.extraBoolAttrs.push("curingPlayer");
   }
   /**
    * attach coronavirus to player
@@ -300,43 +279,19 @@ class MedicBody extends CivilianBody {
     // player.wearingMask = true;
     // return player;
   }
-  toArray() {
-    const array = new Float32Array(this.arraySize);
-    array.fill(0);
-    const fillin = [this.circle.x, this.circle.y, this.circle.r, this.type];
-    array.set(fillin);
-    const encoded = encodeBoolArray([
-      this.team,
-      this.hasBall,
-      this.pickUp,
-      this.throwing,
-      this.wearingMask,
-      this.curingPlayer,
-    ]);
-    array.set(encoded, fillin.length);
-    return array;
-  }
-  static fromArray(pack) {
-    const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
-    const subpack = pack.slice(4);
-    [
-      obj.team,
-      obj.hasBall,
-      obj.pickUp,
-      obj.throwing,
-      obj.wearingMask,
-      obj.curingPlayer,
-    ] = decodeNumArray(subpack, 6);
-    return obj;
-  }
 }
 
 class JacindaBody extends CivilianBody {
   constructor(circle, v) {
     super(circle, v);
     this.type = Body.TYPES.JACINDA;
+
+    // Sent to client
     this.speed = 1.5;
     this.inParliament = false;
+
+    this.extraNumAttrs.push("speed");
+    this.extraBoolAttrs.push("inParliament");
   }
 }
 
@@ -412,10 +367,11 @@ module.exports = {
 };
 // Example of encoding and reading players
 // const player = new PlayerBody(new Circle(0, 0, 12));
+// player.team = 1;
 // const medic = new MedicBody(new Circle(0, 0, 12));
 // const jacinda = new JacindaBody(new Circle(0, 0, 12));
 // const ball = new BallBody(new Circle(1, 1, 10));
-// const pack = entitiesToArray([player, ball, medic, jacinda]);
+// const pack = entitiesToArray([player]);
 // console.log(pack);
 // const entities = entitiesFromArray(pack);
 // console.log(entities);
