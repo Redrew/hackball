@@ -290,6 +290,9 @@ class MedicBody extends CivilianBody {
     super(circle, v);
     this.type = Body.TYPES.MEDIC;
     this.curingPlayer = false;
+    const maxTime = 300;
+    this.cureTimer = maxTime;
+    this.savePlayer;
   }
   /**
    * attach coronavirus to player
@@ -346,6 +349,34 @@ class MedicBody extends CivilianBody {
     ] = decodeNumArray(subpack, 6);
     return obj;
   }
+  update(game){
+    super.update(game);
+  }
+
+  collide(entity){
+    super.collide(entity)
+
+    //Cure people logic
+    if(entity instanceof PlayerBody && entity.caughtCorona) {
+      if (this.savePlayer === entity) {
+        this.cureTimer -= 1;
+
+        //save player when timer is up
+        if(this.cureTimer <= 0) {
+          this.savePlayer.caughtCorona = false;
+        }
+      }
+      //Start saving player
+      else {
+        savePlayer = entity;
+        this.cureTimer = maxTime;
+      }
+    }
+    //not saving anyone
+    else {
+      this.savePlayer = null;
+    }
+  }
 }
 
 class JacindaBody extends CivilianBody {
@@ -355,6 +386,7 @@ class JacindaBody extends CivilianBody {
     this.speed = 1.5;
     this.inParliament = false;
   }
+  
 }
 
 function entityFromArray(array) {
