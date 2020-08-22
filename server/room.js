@@ -134,43 +134,27 @@ class Room {
           if (p1.isMedic && p2.caughtCorona) {
             // if one has corona and the other is medic, medic saves patient
           }
-        }else{ 
-          
+        }
+        
+        else {   
           // if player and corona
           let dist = p2.circle.distance(p1.circle),
             vx = (c2.x - c1.x) / dist,
             vy = (c2.y - c1.y) / dist;
 
           if (
-            // throw when space bar is pressed and there is a corona is already picked up
+            // throw when space bar is pressed and there is a corona already picked up
             p2.type === ge.Body.TYPES.BALL &&
             players[index].flags & 2 &&
             p1.hasBall === players[i]
           ) {
-            p2.active = true;
+            p2.moving = true;
             p2.pickedUp = false;
             p1.hasBall = null;
 
             vx *= 13;
             vy *= 13;
-          } else if (
-            p2.type === ge.Body.TYPES.BALL &&
-            !p2.active &&
-            (p1.hasBall === players[i] ||
-              !p1.hasBall)
-          ) {
-            // pick up corona
-            p1.hasBall === players[i];
-            p1.hasBall = players[i];
-            p2.pickedUp = true;
-            p2.circle.x = p1.circle.x;
-            p2.circle.y = p1.circle.y;
-            p2.v.x = p1.v.x;
-            p2.v.y = p1.v.y;
-            continue;
-            // vx *= 8;
-            //vy *= 8;
-          }
+          } 
 
           // "weight"
           p1.v.mul(0.9);
@@ -196,7 +180,6 @@ class Room {
             p2.circle.add(p2.v);
           }
         }
-
         // Mark flag
         hasCollision = true;
       }
@@ -206,7 +189,7 @@ class Room {
   }
 
   _checkBallCollisions(entities, index) {
-    // index is always an ACTIVE ball
+    // index is always an MOVING ball
     let ball = entities[index].body,
       ballCircle = ball.circle,
       ballV = ball.v,
@@ -218,7 +201,7 @@ class Room {
         entityCircle = entity.circle,
         entityV = entity.v,
         isBall = entity.type === ge.Body.TYPES.BALL,
-        isActive = isBall && entity.active;
+        isMoving = isBall && entity.moving;
       
       // skip itself
       if (i === index) continue;
@@ -230,6 +213,8 @@ class Room {
           // no matter who you are or what team you are on,
           // if you are healthy and hit with a ball, you are frozen
           if (!entity.caughtCorona) {
+            console.log("im here");
+            console.log(ball.moving);
             entity._frozen();
           } 
         }
@@ -318,18 +303,36 @@ class Room {
       let circle = entity.body.circle,
         v = entity.body.v,
         isBall = entity.body.type === ge.Body.TYPES.BALL,
-        isActive = isBall && entity.body.active,
+        isMoving = isBall && entity.body.moving,
         isCivilian = entity.body.type === ge.Body.TYPES.CIVILIAN,
         isMedic = entity.body.type === ge.Body.TYPES.MEDIC,
         isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
 
-      // if entity is an ACTIVE ball and its velociy is small, mark it inactive
-      if (isActive && entity.body.v.length < 0.1) {
-        entity.body.active = false;
+        for (let i=0; i<entities.length; i++) {
+          // skip itself
+          if (i===index) continue;
+          // skip all the balls and only check players
+          if (entities[i].body.type === ge.Body.TYPES.BALL) continue;
+          // circle2 should only be of type PLAYER
+          let circle2 = entities[i].body.circle;
+          if (entities[i].body.type === ge.Body.TYPES.PLAYER && 
+            circle.intersect(circle2)) {
+              entity.body.collide(entities[i]);
+          }
+        }
+
+        // throw when spacebar is pressed and current player has a ball
+        if (
+          
+        )
+
+      // if entity is a MOVING ball and its velociy is small, mark it not moving
+      if (isMoving && entity.body.v.length < 0.1) {
+        entity.body.moving = false;
       }
 
-      // Check collisions between ACTIVE balls and players/balls (hit by)
-      if (isBall && isActive) this._checkBallCollisions(entities, index);
+      // Check collisions between MOVING balls and players/balls (hit by)
+      if (isMoving) this._checkBallCollisions(entities, index);
 
       // Check collisions between players and players/balls (pickup/throw)
       if (!isBall) this._checkPlayerCollisions(entities, index);
@@ -370,6 +373,7 @@ class Room {
     this.broadcast("roomUpdate", socketData.buffer);
   }
 
+
   _createBalls() {
     this.balls = [];
     // const yInterval = this.board.h / (this.numBalls + 1);
@@ -384,6 +388,7 @@ class Room {
       });
     }
   }
+
   /**
    * Start/stop room loop
    */
@@ -393,7 +398,6 @@ class Room {
       this._alignOnBoard(this.players[i]);
     }
 
-  
     // assign roles
 
     // Set balls
@@ -406,6 +410,7 @@ class Room {
       1000 / 60
     );
   }
+
   stop() {
     clearInterval(this.physicsInterval);
   }

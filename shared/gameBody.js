@@ -34,7 +34,6 @@ class PlayerBody extends Body {
     this.speed = 1;
     this.aimDirection = 0; // in radians
     this.ballId = null;
-    this.moving = false;
 
     // Sent to client
     this.team = 0;
@@ -71,7 +70,45 @@ class PlayerBody extends Body {
 
   _frozen() {
     this.caughtCorona = true;
-    console.log("caught");
+  }
+
+  _collide(entity) {
+    let circle = entity.body.circle,
+        v = entity.body.v,
+        dist = entity.body.circle.distance(this.circle),
+        vx = (circle.x - this.circle.x) / dist,
+        vy = (circle.y - this.circle.y) / dist,
+        isBall = entity.body.type === ge.Body.TYPES.BALL,
+        isMoving = isBall && entity.body.moving,
+        isCivilian = entity.body.type === ge.Body.TYPES.CIVILIAN,
+        isMedic = entity.body.type === ge.Body.TYPES.MEDIC,
+        isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
+    
+    // collision between player and ball on floor
+    if (isBall && !isMoving) {
+      // pick up corona 
+      // if (this.hasBall === entity || !this.hasBall)
+      if (!this.hasBall) {
+        this.ballId = entity.body.id;
+        this.hasBall = true;
+        entity.body.pickedUp = true;
+        entity.body.team = this.team;
+        entity.body.circle.x = this.circle.x;
+        entity.body.circle.y = this.circle.y;
+        entity.body.v.x = this.v.x;
+        entity.body.v.y = this.v.y;
+        // not sure what the following does
+        vx *= 8;
+        vy *= 8;
+      }
+      
+    }
+
+    // collision between player and moving ball
+
+    // collision between player and players
+      
+
   }
 }
 
@@ -81,7 +118,6 @@ class BallBody extends Body {
     this.type = Body.TYPES.BALL;
     this.id = id;
     this.pickedUp = false;
-    this.active = false;
 
     // Sent to client
     this.team = null;
@@ -101,6 +137,10 @@ class BallBody extends Body {
     const subpack = pack.slice(4);
     [this.team, this.moving] = decodeNumArray(subpack, 2);
     return obj;
+  }
+
+ 
+
   }
 }
 
