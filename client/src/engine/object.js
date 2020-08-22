@@ -188,7 +188,7 @@ export class Layer extends Child {
       }
     }
 
-    // Init children
+    // Init childrenFF0000
     this.children.push(child);
     child.init && child.init();
     return child;

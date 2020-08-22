@@ -5,25 +5,8 @@ const md5 = require("blueimp-md5"),
 const { Vec2, Circle, Rect } = require("../shared/math"),
   config = require("../shared/config"),
   io = require("../app"),
-  ge = require("../shared/gameEntities");
+  ge = require("../shared/gameBody");
 console.log(config);
-/**
- * Body showed on board
- * @class
- */
-class BoardBody {
-  constructor(room, circle, v, type = BoardBody.TYPES.PLAYER) {
-    this.circle = circle;
-    this.v = v || new Vec2();
-    this.room = room;
-    this.type = type;
-  }
-}
-
-BoardBody.TYPES = {
-  PLAYER: 0,
-  BALL: 1,
-};
 
 /**
  * Room class
@@ -112,6 +95,10 @@ class Room {
     return _.filter(this.players, (player) => player.team !== omit);
   }
 
+  omitUninitialized(entities) {
+    return _.filter(entities, (entity) => entity.body != null);
+  }
+
   /**
    * Destroy room
    */
@@ -129,42 +116,39 @@ class Room {
    * Check room collisions
    * @param players Players array
    * @param index   Player index
-   * @param test    Only tests
    * @private
    */
-  _checkCollisions(players, index, test) {
+  _checkPlayerCollisions(players, index) {
     let p1 = players[index].body,
       c1 = p1.circle.center,
       hasCollision = false;
 
-    for (let i = 0; i < players.length; ++i) {
+    // collision between every player with every other entity (ball and player)
+    for (let i = 0; i < players.length; i++) {
       if (i === index) continue;
 
-      // Get center of circle
+      // Get center of circle of second entity
       let p2 = players[i].body,
         c2 = p2.circle.center;
 
       // If the circles are colliding
       if (p1.circle.intersect(p2.circle)) {
-        if (!test) {
+        // if both players
+        if (!p2.type === ge.Body.TYPES.BALL) {
+          if (p1.isMedic && p2.caughtCorona) {
+            // if one has corona and the other is medic, medic saves patient
+          }
+        } else {
+          // if player and corona
           let dist = p2.circle.distance(p1.circle),
             vx = (c2.x - c1.x) / dist,
             vy = (c2.y - c1.y) / dist;
-
-          // Kick if it's the ball
-          if (
-            players[i].body.type === BoardBody.TYPES.BALL &&
-            players[index].flags & 2
-          ) {
-            vx *= 8;
-            vy *= 8;
-          }
 
           // "weight"
           p1.v.mul(0.9);
 
           // Make ball owner
-          if (!p1.owner || p1.owner === -1) p1.owner = i;
+          // if (!p1.owner || p1.owner === -1) p1.owner = i;
 
           // Add to velocity vector
           if (
@@ -184,7 +168,6 @@ class Room {
             p2.circle.add(p2.v);
           }
         }
-
         // Mark flag
         hasCollision = true;
       }
@@ -192,6 +175,44 @@ class Room {
     if (!hasCollision) players[players.length - 1].owner = -1;
     return hasCollision;
   }
+
+  // _checkBallCollisions(entities, index) {
+  //   // index is always an MOVING ball
+  //   let ball = entities[index].body,
+  //     ballCircle = ball.circle,
+  //     ballV = ball.v,
+  //     hasCollision = false;
+
+  //   // collision between ball with every other entity
+  //   for (let i = 0; i < entities.length; ++i) {
+  //     let entity = entities[i].body,
+  //       entityCircle = entity.circle,
+  //       entityV = entity.v,
+  //       isBall = entity.type === ge.Body.TYPES.BALL,
+  //       isMoving = isBall && entity.moving;
+
+  //     // skip itself
+  //     if (i === index) continue;
+
+  //     // if there is a collision
+  //     if (ballCircle.intersect(entityCircle)) {
+  //       // collion between ball and player
+  //       if (!isBall) {
+  //         // no matter who you are or what team you are on,
+  //         // if you are healthy and hit with a ball, you are frozen
+  //         if (!entity.caughtCorona) {
+  //           console.log("im here");
+  //           console.log(ball.moving);
+  //           entity._frozen();
+  //         }
+  //       }
+  //       // collision between ball and ball
+  //       else {
+  //         // to be implemented: both balls either cancel out or roll away?
+  //       }
+  //     }
+  //   }
+  // }
 
   /**
    * Set player position on board
@@ -208,10 +229,9 @@ class Room {
 
       // Move to center if has collision
       while (
-        this._checkCollisions(
+        this._checkPlayerCollisions(
           this.players,
-          _.indexOf(this.players, player),
-          true
+          _.indexOf(this.players, player)
         )
       ) {
         let direction = this.board.center.sub(player.body.circle).normalize();
@@ -235,7 +255,7 @@ class Room {
 
   /**
    * Check collisions with board border
-   * @param body    BoardBody
+   * @param body    a class from gameBody.js
    * @param margin  Margin
    * @returns {Room}
    * @private
@@ -264,69 +284,60 @@ class Room {
    * @private
    */
   _updatePhysics() {
-    const players = this.omitTeam(Room.Teams.SPECTATORS);
+    const players = this.omitUninitialized(
+      this.omitTeam(Room.Teams.SPECTATORS)
+    );
     const entities = _.concat(players, this.balls);
-
-    // Socket data [x, y, r, flag]
-    let packSize = 4,
-      socketData = new Float32Array(entities.length * packSize);
 
     _.each(entities, (entity, index) => {
       let circle = entity.body.circle,
         v = entity.body.v,
-        isBall = entity.body.type === BoardBody.TYPES.BALL;
+        isBall = entity.body.type === ge.Body.TYPES.BALL,
+        isMoving = isBall && entity.body.moving,
+        isCivilian = entity.body.type === ge.Body.TYPES.CIVILIAN,
+        isMedic = entity.body.type === ge.Body.TYPES.MEDIC,
+        isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
 
-      // Check collisions without ball
-      if (!isBall) this._checkCollisions(entities, index);
+      for (let i = 0; i < entities.length; i++) {
+        // skip itself
+        if (i === index) continue;
 
-      // Check collisions with goals
-      // if(isBall && !this.board.contains(circle)) {
-      //   // Create colliding box for each goal and check
-      //   let collidingGoal = _.findKey(this.goals, goal => {
-      //     let rect = new Rect(
-      //         goal.p1[0] - goal.size + (goal.sign === -1 && circle.r * 2)
-      //       , goal.p1[1] + goal.size
-      //       , goal.p2[0] - goal.p1[0] + goal.size
-      //       , goal.p2[1] - goal.p1[1] - goal.size * 2
-      //     );
-      //     return rect.intersect(circle);
-      //   });
+        // if collision, call the body's collide function
+        // collide functions return the team that gets 1 point
+        let circle2 = entities[i].body.circle;
+        if (circle.intersect(circle2)) {
+          entity.body.collide(entities[i]);
+          // if (entity.body.collide(entities[i])) {
+          //   this._addGoal(entity.body.collide(entities[i]));
+          // }
+        }
+      }
 
-      //   // If its colliding with goal
-      //   if(collidingGoal) {
-      //     this._addGoal(collidingGoal);
-      //     return false;
-      //   }
-      // }
+      // if entity is a MOVING ball and its velociy is small, mark it not moving [Moved to BallBody.update(game)]
+
+      // // Check collisions between MOVING balls and players/balls (hit by)
+      // if (isMoving) this._checkBallCollisions(entities, index);
+
+      // // Check collisions between players and players/balls (pickup/throw)
+      // if (!isBall) this._checkPlayerCollisions(entities, index);
 
       // Check collisions with borders
       this._calcBordersCollisions(entity.body, !isBall && 64);
 
-      // Update physics
-      circle.add(v);
-      v.mul(0.95);
+      // Update
+      entity.body.update(this);
 
-      // Data structure: 0FFFFBRR
-      let flags = entity.team | (isBall && 1 << 2) | (entity.flags << 3);
-
-      socketData.set(
-        [
-          /** position */
-          circle.x,
-          circle.y,
-          circle.r,
-          flags /** todo: More flags */,
-        ],
-        index * packSize
-      );
-      //
-      ///**
-      // * Data in buffer is compressed, player must
-      // * know which from the list is player
-      // * todo: Fix it, merge with roomSettings
-      // */
-      //player.socket("roomPlayerIndex", index);
+      let mouse_pos_x = entity.mouse_position_x || 0.0;
+      let mouse_pos_y = entity.mouse_position_y || 0.0;
     });
+
+    const bodiesToRender = [];
+    entities.forEach((entity) => {
+      var body = entity.body;
+      if (body.type === ge.Body.TYPES.BALL && body.pickedUp) return;
+      bodiesToRender.push(body);
+    });
+    const socketData = ge.entitiesToArray(bodiesToRender);
 
     // Broadcast
     this.broadcast("roomUpdate", socketData.buffer);
@@ -334,20 +345,34 @@ class Room {
 
   _createBalls() {
     this.balls = [];
-    const yInterval = this.board.h / (this.numBalls + 1);
+    // const yInterval = this.board.h / (this.numBalls + 1);
     for (var i = 0; i < this.numBalls; i++) {
-      var x = this.board.w / 2 - this.ballR;
-      var y = (i + 1) * yInterval - this.ballR;
+      var x = Math.random() * this.board.w;
+      var y = Math.random() * this.board.h;
+      // var x = this.board.w / 2 - this.ballR;
+      // var y = (i + 1) * yInterval - this.ballR;
       var circle = new Circle(x, y, this.ballR);
       this.balls.push({
-        body: new BoardBody(this, circle, null, BoardBody.TYPES.BALL),
+        body: new ge.BallBody(circle, i, new Vec2(0, 0)),
       });
     }
   }
+
   /**
    * Start/stop room loop
    */
   start() {
+    console.log("Game start");
+    // Creating new player bodies and adding to players list
+    for (let i = 0; i < this.players.length; i++) {
+      var player = this.players[i];
+      player.body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0));
+      player.body.team = player.team;
+    }
+    this.players.forEach((player) => this._alignOnBoard(player));
+
+    // assign roles
+
     // Set balls
     this._createBalls();
 
@@ -358,6 +383,7 @@ class Room {
       1000 / 60
     );
   }
+
   stop() {
     clearInterval(this.physicsInterval);
   }
@@ -371,7 +397,7 @@ class Room {
   setTeam(player, newTeam) {
     // Create new body
     player.team = newTeam;
-    this._alignOnBoard(player)._broadcastSettings();
+    this._broadcastSettings();
     return this;
   }
 
@@ -412,13 +438,11 @@ class Room {
    * @returns {Room}
    */
   join(player) {
-    // Adding to list
+    // assign the player to team and room
     _.assign(player, {
       team: Room.Teams.SPECTATORS,
       room: this,
-      body: new BoardBody(this, new Circle(60, 60, 13)),
     });
-
     // Join socket
     player.socket.join(this.name);
     this.players.push(player);

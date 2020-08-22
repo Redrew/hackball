@@ -16,6 +16,7 @@ import Table from "../ui/table";
 
 import Message from "../engine/message";
 import Client from "../multiplayer/client";
+import { entitiesFromArray, Body } from "../../../shared/gameBody";
 
 /**
  * Core game state, it shows rooms gameplay
@@ -75,9 +76,9 @@ export default class Board extends State {
 
     // Get room changes
     listeners["roomUpdate"] = (data) => {
-      if (this.projector)
-        this.projector.children = _.chunk(new Float32Array(data), 4);
-      console.log(this.projector.children);
+      if (this.projector) {
+        this.projector.bodies = entitiesFromArray(new Float32Array(data));
+      }
     };
 
     return listeners;
@@ -101,6 +102,8 @@ export default class Board extends State {
       align: [0, 0],
       fill: [1, 1],
     });
+
+    this.projector.parent = this;
 
     // UI buttons
     this.add(new Button(new Rect(0, 0, 100, 16), "Exit"), {
@@ -136,6 +139,9 @@ Board.Projector = class extends Layer {
     this.eventForwarding = false;
 
     this.tile = new Sprite(new Rect(0, 0, 16, 16), "tile", new Vec2(4, 1));
+    this.tile2 = new Sprite(new Rect(0, 0, 16, 16), "tile", new Vec2(4, 1));
+    this.prev_mouse_pos_x = 0.0;
+    this.prev_mouse_pos_y = 0.0;
     this.board = new Rect();
   }
 
@@ -196,42 +202,47 @@ Board.Projector = class extends Layer {
 
     // Render players
     context.setFontSize(16);
-    _.each(this.children, (player, index) => {
-      let isBall = player[3] & 0b100;
-
+    _.each(this.bodies, (body, index) => {
+      let isBall = body.type === Body.TYPES.BALL;
+      let circle = body.circle;
       // Position
-      this.tile.rect.xy = player;
-      this.tile.rect.w = this.tile.rect.h = player[2] * 2;
+      this.tile.rect.xy = circle.xy;
+      this.tile.rect.w = this.tile.rect.h = circle.r * 2;
 
       // Render sprite
-      this.tile.tileIndex.xy = [isBall ? 1 : player[3] & 0b011, 0];
+      if (!isBall) console.log(body);
+      var colorIndex = body.team != 0 ? 0 : 2;
+      if (isBall && !body.moving) colorIndex = 1;
+      if (body.type === Body.TYPES.PLAYER && body.caughtCorona) colorIndex = 1;
+      this.tile.tileIndex.xy = [colorIndex, 0];
       this.tile.draw(context);
 
       // Draw index
-      if (!isBall)
+      if (!isBall) {
         context
           .fillWith(Color.Hex.WHITE)
           .drawText(
             index,
             new Vec2(
-              this.tile.rect.x + player[2] - 5,
+              this.tile.rect.x + circle.r - 5,
               this.tile.rect.y + this.tile.rect.h - 7
             )
           );
 
-      // Check flags
-      let flags = (player[3] >> 3) & 0b111;
-      if (flags & 2)
-        context
-          .strokeWith(Color.Hex.WHITE)
-          .strokeCircle(
-            new Vec2(
-              this.tile.rect.x + player[2],
-              this.tile.rect.y + player[2]
-            ),
-            player[2],
-            4
-          );
+        // Add outline if the player has a ball
+        if (body.hasBall) {
+          context
+            .strokeWith(Color.Hex.WHITE)
+            .strokeCircle(
+              new Vec2(
+                this.tile.rect.x + circle.r,
+                this.tile.rect.y + circle.r
+              ),
+              circle.r,
+              4
+            );
+        }
+      }
     });
 
     ctx.restore();
@@ -257,24 +268,34 @@ Board.Projector = class extends Layer {
 
   /** @inheritdoc */
   onEvent(event) {
-    if (!event.isKeyboardEvent()) return;
-
-    let flag = 0;
-    switch (event.data) {
-      /** Space */
-      case 32:
-        flag = 1 << 1;
-        break;
-    }
-
-    // Add flag when key pressed, remove when released
-    switch (event.type) {
-      case Message.Type.KEY_DOWN:
-        Client.emit("addFlag", flag);
-        break;
-      case Message.Type.KEY_UP:
-        Client.emit("removeFlag", flag);
-        break;
+    if (event.isKeyboardEvent()) {
+      // Removed space bar action
+      // let flag = 0;
+      // switch (event.data) {
+      //   /** Space */
+      //   case 32:
+      //     flag = 1 << 1;
+      //     break;
+      // }
+      // // Add flag when key pressed, remove when released
+      // switch (event.type) {
+      //   case Message.Type.KEY_DOWN:
+      //     Client.emit("addFlag", flag);
+      //     break;
+      //   case Message.Type.KEY_UP:
+      //     Client.emit("removeFlag", flag);
+      //     break;
+      // }
+    } else if (event.isMouseEvent()) {
+      const canvasOffset = new Vec2(this.rect.w / 2 - this.board.w / 2, 50);
+      const canvasCoords = event.data.clone().sub(canvasOffset);
+      switch (event.type) {
+        // case Message.Type.MOUSE_MOVE:
+        //   Client.emit("mouse_position", canvasCoords);
+        //   break;
+        case Message.Type.MOUSE_CLICK:
+          Client.emit("throw", canvasCoords);
+      }
     }
   }
 
@@ -302,7 +323,6 @@ Board.SettingsPopup = class extends Popup {
 
   /**
    * Get selected player from teams listBoxes
-   * @returns {Player}
    */
   get selectedPlayer() {
     return (
@@ -398,9 +418,9 @@ Board.SettingsPopup = class extends Popup {
       });
 
     this.matchPanel
-      .add(new Button(new Rect(0, 0, 64, 0), "Jacinta"), { fill: [0, 1] })
+      .add(new Button(new Rect(0, 0, 64, 0), "Jacinda"), { fill: [0, 1] })
       .addForwarder(Message.Type.MOUSE_CLICK, () => {
-        console.log("Make Jacinta");
+        console.log("Make Jacinda");
       });
     return this;
   }

@@ -22,7 +22,6 @@ class Vec2 {
   set xy(xy) {
     this.x = xy[0];
     this.y = xy[1];
-    return this;
   }
   get xy() {
     return [this.x, this.y];
@@ -61,6 +60,16 @@ class Vec2 {
   }
 
   /**
+   * Mul by Scaler
+   * @param multiplier times vec by mul.
+   */
+  mulScal(multiplier) {
+    this.x *= multiplier;
+    this.y *= multiplier;
+    return this;
+  }
+
+  /**
    * Get length of Vector
    */
   get length() {
@@ -72,6 +81,15 @@ class Vec2 {
    */
   get dot() {
     return this.x * this.x + this.y * this.y;
+  }
+
+  /**
+   * Actual Dot product of vector
+   * @param   vector Vector
+   * @return  dot product of vector with itself
+   */
+  dotP(vector) {
+    return this.x * vector.x + this.y * vector.y;
   }
 
   /**
@@ -198,7 +216,7 @@ class Circle extends Vec2 {
    * @returns {Vec2}
    */
   get center() {
-    return new Vec2(this.x + this.r / 2, this.y + this.r / 2);
+    return new Vec2(this.x + this.r, this.y + this.r);
   }
 
   /**
@@ -218,7 +236,7 @@ class Circle extends Vec2 {
    * @returns {boolean}
    */
   intersect(circle) {
-    return this.distance(circle) < circle.r + this.r;
+    return this.distance(circle) <= circle.r + this.r;
   }
 }
 
