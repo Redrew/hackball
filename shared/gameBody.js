@@ -213,10 +213,12 @@ class BallBody extends Body {
       impulseDir = new Vec2(xDist, yDist).normalize();
       impulse = impulseDir.clone().mulScal(this.v.add(entVel, -1.0).dotP(impulseDir));
       this.v.add(impulse, 1.0);
+
+      //Loss of vel in collision
       this.v.mulScal(0.8);
       
       
-
+      //Turned off, can be changed
       //this.moving = false;
       this.pickedUp = false;
       this.team = null;
