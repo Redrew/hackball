@@ -17,6 +17,8 @@ class Body {
     this.arraySize = SIZE;
   }
   init() {}
+  update(game) {}
+  collide(obj) {}
 }
 
 Body.TYPES = {
@@ -30,10 +32,12 @@ Body.TYPES = {
 class PlayerBody extends Body {
   constructor(circle, v) {
     super(circle, v);
+    this.flags = 0;
     this.type = Body.TYPES.PLAYER;
     this.speed = 1;
-    this.aimDirection = 0; // in radians
-    this.ballId = null;
+    this.throwDirection = new Vec2(1, 0); // in radians
+    this.ball = null;
+    this.throwSpeed = 13;
 
     // Sent to client
     this.team = 0;
@@ -41,9 +45,32 @@ class PlayerBody extends Body {
     this.caughtCorona = false;
     this.hasBall = false;
     this.pickUp = false;
-    this.throw = false;
+    this.throwing = false;
   }
 
+  update(game) {
+    // Unpack flags
+    if (this.hasBall && this.throwing) {
+      this.throw();
+    }
+    this.throwing = false;
+  }
+
+  throw() {
+    const r = this.circle.r,
+      ballr = this.ball.circle.r;
+    const spawnDistance = r + ballr;
+    var spawnLocation = this.circle
+      .clone()
+      .add(new Vec2(r - ballr, r - ballr))
+      .add(this.throwDirection, spawnDistance);
+    this.ball.circle.xy = spawnLocation.xy;
+    this.ball.v = this.throwDirection.clone().mul(this.throwSpeed);
+    this.ball.team = this.team;
+    this.ball.pickedUp = false;
+    this.ball = null;
+    this.hasBall = false;
+  }
   toArray() {
     const array = new Float32Array(this.arraySize);
     array.fill(0);
@@ -53,7 +80,7 @@ class PlayerBody extends Body {
       this.team,
       this.hasBall,
       this.pickUp,
-      this.throw,
+      this.throwing,
     ]);
     array.set(encoded, fillin.length);
     return array;
@@ -61,7 +88,7 @@ class PlayerBody extends Body {
   static fromArray(pack) {
     const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
     const subpack = pack.slice(4);
-    [this.team, this.hasBall, this.pickUp, this.throw] = decodeNumArray(
+    [obj.team, obj.hasBall, obj.pickUp, obj.throwing] = decodeNumArray(
       subpack,
       4
     );
@@ -70,22 +97,22 @@ class PlayerBody extends Body {
 
   collide(entity) {
     let circle = entity.body.circle,
-        v = entity.body.v,
-        dist = entity.body.circle.distance(this.circle),
-        vx = (circle.x - this.circle.x) / dist,
-        vy = (circle.y - this.circle.y) / dist,
-        isBall = entity.body.type === Body.TYPES.BALL,
-        isMoving = isBall && entity.body.moving,
-        isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
-        isMedic = entity.body.type === Body.TYPES.MEDIC,
-        isJacinda = entity.body.type === Body.TYPES.JACINDA;
-    
+      v = entity.body.v,
+      dist = entity.body.circle.distance(this.circle),
+      vx = (circle.x - this.circle.x) / dist,
+      vy = (circle.y - this.circle.y) / dist,
+      isBall = entity.body.type === Body.TYPES.BALL,
+      isMoving = isBall && entity.body.moving,
+      isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
+      isMedic = entity.body.type === Body.TYPES.MEDIC,
+      isJacinda = entity.body.type === Body.TYPES.JACINDA;
+
     // collision between player and ball on floor
     if (isBall && !isMoving) {
-      // pick up corona 
+      // pick up corona
       // if (this.hasBall === entity || !this.hasBall)
       if (!this.hasBall) {
-        this.ballId = entity.body.id;
+        this.ball = entity.body;
         this.hasBall = true;
         entity.body.pickedUp = true;
         entity.body.team = this.team;
@@ -113,14 +140,13 @@ class PlayerBody extends Body {
         console.log("ball team is not meant to be null:", ballTeam);
         // return the ball's team to updatePhysics for scoreboard update
         return ballTeam;
-      } 
+      }
     }
 
     // collision between player and players
     if (!isBall) {
       // to be implemented along with roles
     }
-      
   }
 }
 
@@ -135,6 +161,16 @@ class BallBody extends Body {
     this.team = null;
     this.moving = false;
   }
+
+  update(game) {
+    if (this.moving && this.v.length < 0.1) {
+      this.moving = false;
+      this.team = null;
+    }
+    if (this.team != null && this.v.length > 0.1) {
+      this.moving = true;
+    }
+  }
   toArray() {
     const array = new Float32Array(this.arraySize);
     array.fill(0);
@@ -147,21 +183,21 @@ class BallBody extends Body {
   static fromArray(pack) {
     const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
     const subpack = pack.slice(4);
-    [this.team, this.moving] = decodeNumArray(subpack, 2);
+    [obj.team, obj.moving] = decodeNumArray(subpack, 2);
     return obj;
   }
 
   collide(entity) {
     let circle = entity.body.circle,
-        v = entity.body.v,
-        dist = entity.body.circle.distance(this.circle),
-        vx = (circle.x - this.circle.x) / dist,
-        vy = (circle.y - this.circle.y) / dist,
-        isBall = entity.body.type === Body.TYPES.BALL,
-        isMoving = isBall && entity.body.moving,
-        isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
-        isMedic = entity.body.type === Body.TYPES.MEDIC,
-        isJacinda = entity.body.type === Body.TYPES.JACINDA;
+      v = entity.body.v,
+      dist = entity.body.circle.distance(this.circle),
+      vx = (circle.x - this.circle.x) / dist,
+      vy = (circle.y - this.circle.y) / dist,
+      isBall = entity.body.type === Body.TYPES.BALL,
+      isMoving = isBall && entity.body.moving,
+      isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
+      isMedic = entity.body.type === Body.TYPES.MEDIC,
+      isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
     // collide between ball and ball
     if (isBall) {
@@ -174,7 +210,7 @@ class BallBody extends Body {
       entity.team = null;
     }
 
-    // no need to check for collision between ball and player, 
+    // no need to check for collision between ball and player,
     // already done in collide() in PlayerBody
   }
 }
@@ -212,7 +248,7 @@ class CivilianBody extends PlayerBody {
       this.team,
       this.hasBall,
       this.pickUp,
-      this.throw,
+      this.throwing,
       this.wearingMask,
     ]);
     array.set(encoded, fillin.length);
@@ -222,11 +258,11 @@ class CivilianBody extends PlayerBody {
     const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
     const subpack = pack.slice(4);
     [
-      this.team,
-      this.hasBall,
-      this.pickUp,
-      this.throw,
-      this.wearingMask,
+      obj.team,
+      obj.hasBall,
+      obj.pickUp,
+      obj.throwing,
+      obj.wearingMask,
     ] = decodeNumArray(subpack, 5);
     return obj;
   }
@@ -273,7 +309,7 @@ class MedicBody extends CivilianBody {
       this.team,
       this.hasBall,
       this.pickUp,
-      this.throw,
+      this.throwing,
       this.wearingMask,
       this.curingPlayer,
     ]);
@@ -284,12 +320,12 @@ class MedicBody extends CivilianBody {
     const obj = new this(new Circle(pack[PACK.x], pack[PACK.y], pack[PACK.r]));
     const subpack = pack.slice(4);
     [
-      this.team,
-      this.hasBall,
-      this.pickUp,
-      this.throw,
-      this.wearingMask,
-      this.curingPlayer,
+      obj.team,
+      obj.hasBall,
+      obj.pickUp,
+      obj.throwing,
+      obj.wearingMask,
+      obj.curingPlayer,
     ] = decodeNumArray(subpack, 6);
     return obj;
   }
@@ -345,7 +381,7 @@ function encodeBoolArray(bools, elemsize = 8, maxlen = Infinity) {
   bools.forEach((x, i) => {
     var offset = i % elemsize;
     var idx = Math.floor(i / elemsize);
-    encoded[idx] = encoded[idx] | (x << offset);
+    encoded[idx] = encoded[idx] | ((x != 0) << offset);
   });
   return encoded;
 }

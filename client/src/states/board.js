@@ -205,7 +205,8 @@ Board.Projector = class extends Layer {
       this.tile.rect.w = this.tile.rect.h = circle.r * 2;
 
       // Render sprite
-      this.tile.tileIndex.xy = [isBall ? 1 : body.team == 1 ? 0 : 2, 0];
+      if (!isBall) console.log(body);
+      this.tile.tileIndex.xy = [isBall ? 1 : body.team != 0 ? 0 : 2, 0];
       this.tile.draw(context);
 
       // Draw index
@@ -225,7 +226,10 @@ Board.Projector = class extends Layer {
           context
             .strokeWith(Color.Hex.WHITE)
             .strokeCircle(
-              new Vec2(this.tile.rect.x + circle.r, this.tile.rect.y + circle.r),
+              new Vec2(
+                this.tile.rect.x + circle.r,
+                this.tile.rect.y + circle.r
+              ),
               circle.r,
               4
             );
@@ -257,30 +261,32 @@ Board.Projector = class extends Layer {
   /** @inheritdoc */
   onEvent(event) {
     if (event.isKeyboardEvent()) {
-      let flag = 0;
-      switch (event.data) {
-        /** Space */
-        case 32:
-          flag = 1 << 1;
-          break;
-      }
-
-      // Add flag when key pressed, remove when released
-      switch (event.type) {
-        case Message.Type.KEY_DOWN:
-          Client.emit("addFlag", flag);
-          break;
-        case Message.Type.KEY_UP:
-          Client.emit("removeFlag", flag);
-          break;
-      }
+      // Removed space bar action
+      // let flag = 0;
+      // switch (event.data) {
+      //   /** Space */
+      //   case 32:
+      //     flag = 1 << 1;
+      //     break;
+      // }
+      // // Add flag when key pressed, remove when released
+      // switch (event.type) {
+      //   case Message.Type.KEY_DOWN:
+      //     Client.emit("addFlag", flag);
+      //     break;
+      //   case Message.Type.KEY_UP:
+      //     Client.emit("removeFlag", flag);
+      //     break;
+      // }
     } else if (event.isMouseEvent()) {
       const canvasOffset = new Vec2(this.rect.w / 2 - this.board.w / 2, 50);
-      const canvasCoords = event.data.clone().subtract(canvasOffset);
+      const canvasCoords = event.data.clone().sub(canvasOffset);
       switch (event.type) {
-        case Message.Type.MOUSE_MOVE:
-          Client.emit("mouse_position", canvasCoords);
-          break;
+        // case Message.Type.MOUSE_MOVE:
+        //   Client.emit("mouse_position", canvasCoords);
+        //   break;
+        case Message.Type.MOUSE_CLICK:
+          Client.emit("throw", canvasCoords);
       }
     }
   }

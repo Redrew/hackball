@@ -142,20 +142,6 @@ class Room {
             vx = (c2.x - c1.x) / dist,
             vy = (c2.y - c1.y) / dist;
 
-          if (
-            // throw when space bar is pressed and there is a corona already picked up
-            p2.type === ge.Body.TYPES.BALL &&
-            players[index].flags & 2 &&
-            p1.hasBall === players[i]
-          ) {
-            p2.moving = true;
-            p2.pickedUp = false;
-            p1.hasBall = null;
-
-            vx *= 13;
-            vy *= 13;
-          } 
-
           // "weight"
           p1.v.mul(0.9);
 
@@ -188,43 +174,43 @@ class Room {
     return hasCollision;
   }
 
-  _checkBallCollisions(entities, index) {
-    // index is always an MOVING ball
-    let ball = entities[index].body,
-      ballCircle = ball.circle,
-      ballV = ball.v,
-      hasCollision = false;
+  // _checkBallCollisions(entities, index) {
+  //   // index is always an MOVING ball
+  //   let ball = entities[index].body,
+  //     ballCircle = ball.circle,
+  //     ballV = ball.v,
+  //     hasCollision = false;
 
-    // collision between ball with every other entity
-    for (let i = 0; i < entities.length; ++i) {
-      let entity = entities[i].body,
-        entityCircle = entity.circle,
-        entityV = entity.v,
-        isBall = entity.type === ge.Body.TYPES.BALL,
-        isMoving = isBall && entity.moving;
+  //   // collision between ball with every other entity
+  //   for (let i = 0; i < entities.length; ++i) {
+  //     let entity = entities[i].body,
+  //       entityCircle = entity.circle,
+  //       entityV = entity.v,
+  //       isBall = entity.type === ge.Body.TYPES.BALL,
+  //       isMoving = isBall && entity.moving;
       
-      // skip itself
-      if (i === index) continue;
+  //     // skip itself
+  //     if (i === index) continue;
 
-      // if there is a collision
-      if (ballCircle.intersect(entityCircle)) {
-        // collion between ball and player
-        if (!isBall) {
-          // no matter who you are or what team you are on,
-          // if you are healthy and hit with a ball, you are frozen
-          if (!entity.caughtCorona) {
-            console.log("im here");
-            console.log(ball.moving);
-            entity._frozen();
-          } 
-        }
-        // collision between ball and ball
-        else {
-          // to be implemented: both balls either cancel out or roll away?
-        }
-      }
-    }
-  }
+  //     // if there is a collision
+  //     if (ballCircle.intersect(entityCircle)) {
+  //       // collion between ball and player
+  //       if (!isBall) {
+  //         // no matter who you are or what team you are on,
+  //         // if you are healthy and hit with a ball, you are frozen
+  //         if (!entity.caughtCorona) {
+  //           console.log("im here");
+  //           console.log(ball.moving);
+  //           entity._frozen();
+  //         } 
+  //       }
+  //       // collision between ball and ball
+  //       else {
+  //         // to be implemented: both balls either cancel out or roll away?
+  //       }
+  //     }
+  //   }
+  // }
 
   /**
    * Set player position on board
@@ -320,36 +306,10 @@ class Room {
                 this._addGoal(entity.body.collide(entities[i]));
               }
           }
-          
-          // throw if space bar is pressed and current entity is player with ball
-          let p1 = entity.body,
-            c1 = p1.circle.center,
-            p2 = entities[i].body,
-            c2 = p2.circle.center,
-            dist = p2.circle.distance(p1.circle),
-            vx = (c2.x - c1.x) / dist,
-            vy = (c2.y - c1.y) / dist;
-
-          if (
-            p1.type === ge.Body.TYPES.PLAYER &&
-            p2.type === ge.Body.TYPES.BALL &&
-            entity.flags & 2 &&
-            p1.hasBall && p1.ballId === p2.id
-          ) {
-            p2.moving = true;
-            p2.pickedUp = false;
-            p1.hasBall = false;
-            p1.ballId = null;
-            vx *= 13;
-            vy *= 13;
-          }
         }
 
         
-      // if entity is a MOVING ball and its velociy is small, mark it not moving
-      if (isMoving && entity.body.v.length < 0.1) {
-        entity.body.moving = false;
-      }
+      // if entity is a MOVING ball and its velociy is small, mark it not moving [Moved to BallBody.update(game)]
 
       // // Check collisions between MOVING balls and players/balls (hit by)
       // if (isMoving) this._checkBallCollisions(entities, index);
@@ -360,12 +320,12 @@ class Room {
       // Check collisions with borders
       this._calcBordersCollisions(entity.body, !isBall && 64);
 
+      // Update
+      entity.body.update(this)
+      
       // Update physics
       circle.add(v);
       v.mul(0.95);
-
-      // Data structure: 0FFFFBRR
-      let flags = entity.team | (isBall && 1 << 2) | (entity.flags << 3);
 
       let mouse_pos_x = entity.mouse_position_x || 0.0;
       let mouse_pos_y = entity.mouse_position_y || 0.0;

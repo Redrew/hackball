@@ -4,6 +4,7 @@ const validate = require("validate.js"),
   _ = require("lodash");
 
 const { Room } = require("./room"),
+  { Vec2 } = require("../shared/math"),
   io = require("../app");
 
 /**
@@ -33,8 +34,18 @@ class Player {
     let self = this;
     this.socket
       /** Manage flag */
-      .on("addFlag", (flag) => (this.flags |= flag))
-      .on("removeFlag", (flag) => (this.flags &= ~flag))
+      .on("addFlag", (flag) => {
+        this.flags |= flag;
+        if (this.body != null) {
+          this.body.flags |= flag;
+        }
+      })
+      .on("removeFlag", (flag) => {
+        this.flags &= ~flag;
+        if (this.body != null) {
+          this.body.flags &= ~flag;
+        }
+      })
 
       /** Authorize to server */
       .on("setNick", (nick, fn) => {
@@ -111,10 +122,18 @@ class Player {
       .on("move", (dir) => {
         if (this.body && this.body.v.length <= 1.8) this.body.v.add(dir, 0.35);
       })
-      .on("mouse_position", (vec) => {
-        this.mouse_position_x = vec.x;
-        this.mouse_position_y = vec.y;
+      .on("throw", (vec) => {
+        if (this.body) {
+          this.body.throwing = true;
+          this.body.throwDirection = new Vec2(vec.x, vec.y)
+            .sub(this.body.circle)
+            .normalize();
+        }
       })
+      // .on("mouse_position", (vec) => {
+      //   this.mouse_position_x = vec.x;
+      //   this.mouse_position_y = vec.y;
+      // })
 
       /** Ping pong for latency */
       .on("latency", (data, fn) => fn())
