@@ -218,7 +218,7 @@ class Circle extends Vec2 {
    * @returns {Vec2}
    */
   get center() {
-    return new Vec2(this.x + this.r / 2, this.y + this.r / 2);
+    return new Vec2(this.x + this.r, this.y + this.r);
   }
 
   /**

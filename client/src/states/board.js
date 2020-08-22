@@ -206,7 +206,10 @@ Board.Projector = class extends Layer {
 
       // Render sprite
       if (!isBall) console.log(body);
-      this.tile.tileIndex.xy = [isBall ? 1 : body.team != 0 ? 0 : 2, 0];
+      var colorIndex = body.team != 0 ? 0 : 2;
+      if (isBall && !body.moving) colorIndex = 1;
+      if (body.type === Body.TYPES.PLAYER && body.caughtCorona) colorIndex = 1;
+      this.tile.tileIndex.xy = [colorIndex, 0];
       this.tile.draw(context);
 
       // Draw index
