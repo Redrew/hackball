@@ -131,8 +131,6 @@ class PlayerBody extends Body {
         entity.body.moving = false;
         // ball is on the floor again with no team
         entity.body.team = null;
-        // return the player's team to updatePhysics for scoreboard update
-        return this.team;
       }
     }
 
@@ -141,10 +139,7 @@ class PlayerBody extends Body {
       // if healthy player runs into sick player, they become sick
       if (!this.caughtCorona && entity.body.caughtCorona) {
         this.caughtCorona = true;
-        return this.team;
-      }
-
-      // Medics and Jacinda to be implemented
+      }      
     }
     return null;
   }

@@ -33,6 +33,10 @@ class Room {
     this.players = [];
     this.admin = admin;
     this.join(admin);
+  
+    // Count for players in each team
+    this.leftPlayers = [];
+    this.rightPlayers = [];
 
     // hide room in rooms list
     if (hidden !== true) (Room.list = Room.list || []).push(this);
@@ -175,6 +179,18 @@ class Room {
     return this;
   }
 
+  _calcCoronavirusTotal(team) {
+    let total = 0;
+    for (let i=0; i<this.players.length; i++) {
+      if (this.players[i] !== null &&
+        this.players[i].team === team && 
+        this.players[i].body.caughtCorona) {
+        total += 1;
+      }
+    }
+    return total;
+  }
+
   /**
    * Update physics in loop
    * @private
@@ -182,6 +198,20 @@ class Room {
   _updatePhysics() {
     const players = this.omitTeam(Room.Teams.SPECTATORS);
     const entities = _.concat(players, this.balls);
+    
+    // update scoreboard
+    let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
+      rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
+      leftTotal = this.leftPlayers.length,
+      rightTotal = this.rightPlayers.length;
+
+    if (leftFallen === leftTotal && leftFallen > 0) {
+      this._addGoal(Room.Teams.RIGHT);
+    }
+
+    else if (rightFallen === rightTotal && rightFallen > 0) {
+      this._addGoal(Room.Teams.LEFT); 
+    }
 
     _.each(entities, (entity, index) => {
       let circle = entity.body.circle,
@@ -197,12 +227,9 @@ class Room {
         if (i === index) continue;
 
         // if collision, call the body's collide function
-        // collide functions return the team that gets 1 point
         let circle2 = entities[i].body.circle;
         if (circle.intersect(circle2)) {
-          if (entity.body.collide(entities[i])) {
-            this._addGoal(entity.body.collide(entities[i]));
-          }
+          entity.body.collide(entities[i]);
         }
       }
 
@@ -285,6 +312,12 @@ class Room {
   setTeam(player, newTeam) {
     // Create new body
     player.team = newTeam;
+    if (newTeam === Room.Teams.LEFT) {
+      this.leftPlayers.push(player);
+    }
+    else if (newTeam === Room.Teams.RIGHT) {
+      this.rightPlayers.push(player);
+    }
     this._broadcastSettings();
     return this;
   }
