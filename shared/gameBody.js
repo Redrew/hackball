@@ -99,8 +99,6 @@ class PlayerBody extends Body {
     let circle = entity.body.circle,
       v = entity.body.v,
       dist = entity.body.circle.distance(this.circle),
-      vx = (circle.x - this.circle.x) / dist,
-      vy = (circle.y - this.circle.y) / dist,
       isBall = entity.body.type === Body.TYPES.BALL,
       isMoving = isBall && entity.body.moving,
       isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
@@ -110,7 +108,6 @@ class PlayerBody extends Body {
     // collision between player and ball on floor
     if (isBall && !isMoving) {
       // pick up corona
-      // if (this.hasBall === entity || !this.hasBall)
       if (!this.hasBall) {
         this.ball = entity.body;
         this.hasBall = true;
@@ -120,9 +117,7 @@ class PlayerBody extends Body {
         circle.y = this.circle.y;
         v.x = this.v.x;
         v.y = this.v.y;
-        // not sure what the following does
-        // vx *= 8;
-        // vy *= 8;
+ 
       }
     }
 
@@ -135,18 +130,23 @@ class PlayerBody extends Body {
         // ball is no longer moving
         entity.body.moving = false;
         // ball is on the floor again with no team
-        let ballTeam = entity.body.team;
         entity.body.team = null;
-        console.log("ball team is not meant to be null:", ballTeam);
-        // return the ball's team to updatePhysics for scoreboard update
-        return ballTeam;
+        // return the player's team to updatePhysics for scoreboard update
+        return this.team;
       }
     }
 
     // collision between player and players
     if (!isBall) {
-      // to be implemented along with roles
+      // if healthy player runs into sick player, they become sick
+      if (!this.caughtCorona && entity.body.caughtCorona) {
+        this.caughtCorona = true;
+        return this.team;
+      }
+
+      // Medics and Jacinda to be implemented
     }
+    return null;
   }
 }
 
@@ -191,8 +191,6 @@ class BallBody extends Body {
     let circle = entity.body.circle,
       v = entity.body.v,
       dist = entity.body.circle.distance(this.circle),
-      vx = (circle.x - this.circle.x) / dist,
-      vy = (circle.y - this.circle.y) / dist,
       isBall = entity.body.type === Body.TYPES.BALL,
       isMoving = isBall && entity.body.moving,
       isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
@@ -209,7 +207,6 @@ class BallBody extends Body {
       entity.body.pickedUp = false;
       entity.team = null;
     }
-
     // no need to check for collision between ball and player,
     // already done in collide() in PlayerBody
   }
@@ -222,21 +219,6 @@ class CivilianBody extends PlayerBody {
 
     // Sent to client
     this.wearingMask = false;
-  }
-  /**
-   * attach coronavirus to player
-   * @param {BoardBody} ball
-   */
-  _pickupCorona(ball) {
-    // to be implemented
-  }
-
-  /**
-   * throws coronavirus at target position coord
-   * @param {Vec2} targetPosition
-   */
-  _throwCorona(targetPosition) {
-    // to be implemented
   }
 
   toArray() {
@@ -274,22 +256,7 @@ class MedicBody extends CivilianBody {
     this.type = Body.TYPES.MEDIC;
     this.curingPlayer = false;
   }
-  /**
-   * attach coronavirus to player
-   * @param {BoardBody} ball
-   */
-  _pickupCorona(ball) {
-    // to be implemented
-  }
-
-  /**
-   * throws coronavirus at target position coord
-   * @param {Vec2} targetPosition
-   */
-  _throwCorona(targetPosition) {
-    // to be implemented
-  }
-
+  
   /**
    *
    * @param {BoardBody} player
@@ -300,6 +267,7 @@ class MedicBody extends CivilianBody {
     // player.wearingMask = true;
     // return player;
   }
+
   toArray() {
     const array = new Float32Array(this.arraySize);
     array.fill(0);
