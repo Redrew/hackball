@@ -59,6 +59,17 @@ class Vec2 {
     return this;
   }
 
+  
+  /**
+   * Mul by Scaler
+   * @param multiplier times vec by mul.
+   */
+  mulScal(multiplier) {
+    this.x *= multiplier;
+    this.y *= multiplier;
+    return this;
+  }
+
   /**
    * Get length of Vector
    */
@@ -72,6 +83,16 @@ class Vec2 {
   get dot() {
     return this.x * this.x + this.y * this.y;
   }
+
+  /**
+   * Actual Dot product of vector
+   * @param   vector Vector
+   * @return  dot product of vector with itself
+   */
+  get dotP(vector) {
+    return this.x * vector.x + this.y * vector.y;
+  }
+
 
   /**
    * Normalize vector

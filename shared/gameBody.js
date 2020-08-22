@@ -14,10 +14,15 @@ class Body {
   constructor(circle, v) {
     this.circle = circle;
     this.v = v || new Vec2();
+    this.prevVel = this.v;
     this.arraySize = SIZE;
   }
   init() {}
-  update(game) {}
+  update(game) {
+    //Updates previous velocity
+    this.prevVel = this.v;
+
+  }
   collide(obj) {}
 }
 
@@ -49,6 +54,7 @@ class PlayerBody extends Body {
   }
 
   update(game) {
+    super.update(game);
     // Unpack flags
     if (this.hasBall && this.throwing) {
       this.throw();
@@ -189,10 +195,10 @@ class BallBody extends Body {
 
   collide(entity) {
     let circle = entity.body.circle,
-      v = entity.body.v,
+      entVel = entity.body.prevVel,
       dist = entity.body.circle.distance(this.circle),
-      vx = (circle.x - this.circle.x) / dist,
-      vy = (circle.y - this.circle.y) / dist,
+      xDist = (this.circle.x- circle.x),
+      yDist = (this.circle.y - circle.y),
       isBall = entity.body.type === Body.TYPES.BALL,
       isMoving = isBall && entity.body.moving,
       isCivilian = entity.body.type === Body.TYPES.CIVILIAN,
@@ -202,7 +208,16 @@ class BallBody extends Body {
     // collide between ball and ball
     if (isBall) {
       // balls roll away, both balls becomes non-moving and ready for pickup
-      this.moving = false;
+
+      //Ball bounces off code
+      impulseDir = new Vec2(xDist, yDist).normalize();
+      impulse = impulseDir.clone().mulScal(this.v.add(entVel, -1.0).dotP(impulseDir));
+      this.v.add(impulse, 1.0);
+      this.v.mulScal(0.8);
+      
+      
+
+      //this.moving = false;
       this.pickedUp = false;
       this.team = null;
       entity.body.moving = false;
