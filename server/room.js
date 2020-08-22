@@ -134,9 +134,7 @@ class Room {
           if (p1.isMedic && p2.caughtCorona) {
             // if one has corona and the other is medic, medic saves patient
           }
-        }
-        
-        else {   
+        } else {
           // if player and corona
           let dist = p2.circle.distance(p1.circle),
             vx = (c2.x - c1.x) / dist,
@@ -188,7 +186,7 @@ class Room {
   //       entityV = entity.v,
   //       isBall = entity.type === ge.Body.TYPES.BALL,
   //       isMoving = isBall && entity.moving;
-      
+
   //     // skip itself
   //     if (i === index) continue;
 
@@ -202,7 +200,7 @@ class Room {
   //           console.log("im here");
   //           console.log(ball.moving);
   //           entity._frozen();
-  //         } 
+  //         }
   //       }
   //       // collision between ball and ball
   //       else {
@@ -294,21 +292,20 @@ class Room {
         isMedic = entity.body.type === ge.Body.TYPES.MEDIC,
         isJacinda = entity.body.type === ge.Body.TYPES.JACINDA;
 
-        for (let i=0; i<entities.length; i++) {
-          // skip itself
-          if (i===index) continue;
+      for (let i = 0; i < entities.length; i++) {
+        // skip itself
+        if (i === index) continue;
 
-          // if collision, call the body's collide function
-          // collide functions return the team that gets 1 point
-          let circle2 = entities[i].body.circle;
-          if (circle.intersect(circle2)) {
-              if (entity.body.collide(entities[i])) {
-                this._addGoal(entity.body.collide(entities[i]));
-              }
+        // if collision, call the body's collide function
+        // collide functions return the team that gets 1 point
+        let circle2 = entities[i].body.circle;
+        if (circle.intersect(circle2)) {
+          if (entity.body.collide(entities[i])) {
+            this._addGoal(entity.body.collide(entities[i]));
           }
         }
+      }
 
-        
       // if entity is a MOVING ball and its velociy is small, mark it not moving [Moved to BallBody.update(game)]
 
       // // Check collisions between MOVING balls and players/balls (hit by)
@@ -321,8 +318,8 @@ class Room {
       this._calcBordersCollisions(entity.body, !isBall && 64);
 
       // Update
-      entity.body.update(this)
-      
+      entity.body.update(this);
+
       // Update physics
       circle.add(v);
       v.mul(0.95);
@@ -332,18 +329,16 @@ class Room {
     });
 
     const bodiesToRender = [];
-    entities.forEach(entity => {
+    entities.forEach((entity) => {
       var body = entity.body;
-      if (body.type === ge.Body.TYPES.BALL && body.pickedUp) 
-        return;
+      if (body.type === ge.Body.TYPES.BALL && body.pickedUp) return;
       bodiesToRender.push(body);
-    })
+    });
     const socketData = ge.entitiesToArray(bodiesToRender);
 
     // Broadcast
     this.broadcast("roomUpdate", socketData.buffer);
   }
-
 
   _createBalls() {
     this.balls = [];
@@ -355,7 +350,7 @@ class Room {
       // var y = (i + 1) * yInterval - this.ballR;
       var circle = new Circle(x, y, this.ballR);
       this.balls.push({
-        body: new ge.BallBody(circle, i, new Vec2(0,0)),
+        body: new ge.BallBody(circle, i, new Vec2(0, 0)),
       });
     }
   }
@@ -365,8 +360,11 @@ class Room {
    */
   start() {
     // Creating new player bodies and adding to players list
-    for (let i=0; i<this.players.length; i++) {
-      this._alignOnBoard(this.players[i]);
+    for (let i = 0; i < this.players.length; i++) {
+      var player = this.players[i];
+      player.body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0));
+      player.body.team = player.team;
+      this._alignOnBoard(player);
     }
 
     // assign roles
@@ -436,11 +434,10 @@ class Room {
    * @returns {Room}
    */
   join(player) {
-    // assign the player to team and room 
+    // assign the player to team and room
     _.assign(player, {
       team: Room.Teams.SPECTATORS,
       room: this,
-      body: new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0,0))
     });
     // Join socket
     player.socket.join(this.name);
