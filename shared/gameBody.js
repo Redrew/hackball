@@ -211,7 +211,7 @@ class BallBody extends Body {
 
       //Ball bounces off code
       impulseDir = new Vec2(xDist, yDist).normalize();
-      impulse = impulseDir.clone().mulScal(this.v.add(entVel, -1.0).dotP(impulseDir));
+      impulse = impulseDir.clone().mulScal(entVel.add(this.v, -1.0).dotP(impulseDir));
       this.v.add(impulse, 1.0);
 
       //Loss of vel in collision
