@@ -23,6 +23,9 @@ class Body {
   update(game) {
     //Updates previous velocity
     this.prevVel = this.v;
+    // Update physics
+    this.circle.add(this.v);
+    this.v.mul(0.95);
   }
   collide(obj) {}
   toArray() {
@@ -87,6 +90,7 @@ class PlayerBody extends Body {
   }
 
   update(game) {
+    if (this.caughtCorona) this.v.xy = [0, 0];
     super.update(game);
     // Unpack flags
     if (this.hasBall && this.throwing) {
@@ -145,7 +149,7 @@ class PlayerBody extends Body {
     }
 
     // collision between player and moving ball
-    if (isBall && isMoving) {
+    if (isBall && isMoving && entity.body.team != this.team) {
       // if player has ball or already caught corona, nothing happens
       // otherwise, they catch corona
       if (!this.hasBall && !this.caughtCorona) {
@@ -184,6 +188,7 @@ class BallBody extends Body {
   }
 
   update(game) {
+    super.update(game);
     if (this.moving && this.v.length < 0.1) {
       this.moving = false;
       this.team = null;

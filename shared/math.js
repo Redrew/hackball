@@ -59,7 +59,6 @@ class Vec2 {
     return this;
   }
 
-  
   /**
    * Mul by Scaler
    * @param multiplier times vec by mul.
@@ -89,10 +88,9 @@ class Vec2 {
    * @param   vector Vector
    * @return  dot product of vector with itself
    */
-  get dotP(vector) {
+  dotP(vector) {
     return this.x * vector.x + this.y * vector.y;
   }
-
 
   /**
    * Normalize vector

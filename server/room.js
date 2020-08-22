@@ -327,10 +327,6 @@ class Room {
       // Update
       entity.body.update(this);
 
-      // Update physics
-      circle.add(v);
-      v.mul(0.95);
-
       let mouse_pos_x = entity.mouse_position_x || 0.0;
       let mouse_pos_y = entity.mouse_position_y || 0.0;
     });
