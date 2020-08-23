@@ -185,10 +185,10 @@ class PlayerBody extends Body {
 
     // collision between player and players
     if (!isBall) {
-      // if healthy non-medic player runs into sick player, they become sick
+      // if healthy player runs into sick player, they become sick
       if (!this.caughtCorona && entity.body.caughtCorona) {
         this.caughtCorona = true;
-      }
+      }      
     }
     return null;
   }
@@ -275,7 +275,6 @@ class MedicBody extends CivilianBody {
 
     this.extraBoolAttrs.push("curingPlayer");
   }
-
   update(game) {
     super.update(game);
   }

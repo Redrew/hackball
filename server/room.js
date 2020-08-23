@@ -33,6 +33,10 @@ class Room {
     this.players = [];
     this.admin = admin;
     this.join(admin);
+  
+    // Count for players in each team
+    this.leftPlayers = [];
+    this.rightPlayers = [];
 
     // Count for players in each team
     this.leftPlayers = [];
@@ -204,6 +208,20 @@ class Room {
       this.omitTeam(Room.Teams.SPECTATORS)
     );
     const entities = _.concat(players, this.balls);
+    
+    // update scoreboard
+    let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
+      rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
+      leftTotal = this.leftPlayers.length,
+      rightTotal = this.rightPlayers.length;
+
+    if (leftFallen === leftTotal && leftFallen > 0) {
+      this._addGoal(Room.Teams.RIGHT);
+    }
+
+    else if (rightFallen === rightTotal && rightFallen > 0) {
+      this._addGoal(Room.Teams.LEFT); 
+    }
 
     // update scoreboard
     let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
@@ -233,7 +251,6 @@ class Room {
         if (i === index) continue;
 
         // if collision, call the body's collide function
-        // collide functions return the team that gets 1 point
         let circle2 = entities[i].body.circle;
         if (circle.intersect(circle2)) {
           entity.body.collide(entities[i]);
@@ -242,14 +259,6 @@ class Room {
           // }
         }
       }
-
-      // if entity is a MOVING ball and its velociy is small, mark it not moving [Moved to BallBody.update(game)]
-
-      // // Check collisions between MOVING balls and players/balls (hit by)
-      // if (isMoving) this._checkBallCollisions(entities, index);
-
-      // // Check collisions between players and players/balls (pickup/throw)
-      // if (!isBall) this._checkPlayerCollisions(entities, index);
 
       // Check collisions with borders
       this._calcBordersCollisions(entity.body, !isBall && 64);
