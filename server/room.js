@@ -288,7 +288,6 @@ class Room {
       0: { size: 30, sign: -1, p1: [0, 70], p2: [0, 230], score: 0 },
       2: { size: 30, sign: 1, p1: [600, 70], p2: [600, 230], score: 0 },
     };
-    this.broadcast("roomScore", _.mapValues(this.goals, "score"));
     console.log("IM CALLED");
   }
 
