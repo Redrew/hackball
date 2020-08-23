@@ -152,8 +152,9 @@ class PlayerBody extends Body {
       isMedic = entity.body.type === Body.TYPES.MEDIC,
       isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
+    
     // collision between player and ball on floor
-    if (isBall && !isMoving) {
+    if (!this.hasBall && isBall && !isMoving) {
       // pick up corona
       if (!this.hasBall) {
         this.ball = entity.body;
@@ -167,28 +168,31 @@ class PlayerBody extends Body {
  
       }
     }
-
-    // collision between player and moving ball
-    if (isBall && isMoving && entity.body.team != this.team) {
-      // if player has ball or already caught corona, nothing happens
-      // otherwise, they catch corona
-      if (!this.hasBall && !this.caughtCorona) {
-        this.caughtCorona = true;
-        // ball bounces off
-        this.bounce(entity);
-        // ball is no longer moving
-        entity.body.moving = false;
-        // ball is on the floor again with no team
-        entity.body.team = null;
+    else {
+      // collision between player and moving ball FROM DIFFERENT TEAM 
+      if (isBall && isMoving && entity.body.team != this.team) {
+        // if player is healthy and does not have ball, they catch corona
+        // otherwise, nothing happens
+        if (!this.hasBall && !this.caughtCorona) {
+          console.log("CAUGHT CORONAVIRUS!!!!!!");
+          this.caughtCorona = true;
+          // ball is no longer moving
+          entity.body.moving = false;
+          // ball is on the floor again with no team
+          entity.body.team = null;
+        }
       }
-    }
 
-    // collision between player and players
-    if (!isBall) {
-      // if healthy player runs into sick player, they become sick
-      if (!this.caughtCorona && entity.body.caughtCorona) {
-        this.caughtCorona = true;
-      }      
+      // collision between player and players
+      if (!isBall) {
+        // if healthy player runs into sick player, they become sick
+        if (!this.caughtCorona && entity.body.caughtCorona) {
+          this.caughtCorona = true;
+        }
+      }
+
+      // EVERYTHING BOUNCE OFF EACH OTHER !!!!
+      this.bounce(entity);
     }
     return null;
   }

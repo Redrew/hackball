@@ -190,7 +190,7 @@ class Room {
   _calcCoronavirusTotal(team) {
     let total = 0;
     for (let i=0; i<this.players.length; i++) {
-      if (this.players[i] !== null &&
+      if (this.players[i].body !== null &&
         this.players[i].team === team && 
         this.players[i].body.caughtCorona) {
         total += 1;
@@ -209,20 +209,6 @@ class Room {
     );
     const entities = _.concat(players, this.balls);
     
-    // update scoreboard
-    let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
-      rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
-      leftTotal = this.leftPlayers.length,
-      rightTotal = this.rightPlayers.length;
-
-    if (leftFallen === leftTotal && leftFallen > 0) {
-      this._addGoal(Room.Teams.RIGHT);
-    }
-
-    else if (rightFallen === rightTotal && rightFallen > 0) {
-      this._addGoal(Room.Teams.LEFT); 
-    }
-
     // update scoreboard
     let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
       rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
@@ -297,6 +283,15 @@ class Room {
     }
   }
 
+  _resetScoreboard() {
+    this.goals = {
+      0: { size: 30, sign: -1, p1: [0, 70], p2: [0, 230], score: 0 },
+      2: { size: 30, sign: 1, p1: [600, 70], p2: [600, 230], score: 0 },
+    };
+    this.broadcast("roomScore", _.mapValues(this.goals, "score"));
+    console.log("IM CALLED");
+  }
+
   /**
    * Start/stop room loop
    */
@@ -310,7 +305,7 @@ class Room {
     }
     this.players.forEach((player) => this._alignOnBoard(player));
 
-    // assign roles
+    // Assign roles
 
     // Set balls
     this._createBalls();
@@ -321,6 +316,9 @@ class Room {
       this._updatePhysics.bind(this),
       1000 / 60
     );
+
+    // Reset scoreboard
+    this._resetScoreboard();
   }
 
   stop() {
