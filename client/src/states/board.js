@@ -161,6 +161,12 @@ Board.Projector = class extends Layer {
         new Vec2(this.board.w / 2, 0),
         2
       );
+    
+    // Render ping
+    context
+      .fillWith(Color.Hex.WHITE)
+      .setFontSize(8)
+      .drawText(`Ping: ${Client.ping}`, new Vec2(0, 0));
 
     // Render goals
     // context.strokeWith(Color.Hex.WHITE);
@@ -197,6 +203,7 @@ Board.Projector = class extends Layer {
 
     // Render players
     context.setFontSize(16);
+    console.log(this.bodies);
     _.each(this.bodies, (body, index) => {
       let isBall = body.type === Body.TYPES.BALL;
       let circle = body.circle;

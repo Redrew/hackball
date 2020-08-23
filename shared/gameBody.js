@@ -85,7 +85,7 @@ class PlayerBody extends Body {
     this.pickUp = false;
     this.throwing = false;
 
-    this.extraBoolAttrs = ["hasBall", "pickUp", "throwing"];
+    this.extraBoolAttrs = ["hasBall", "pickUp", "throwing", "caughtCorona"];
     this.extraNumAttrs = ["team"];
   }
 
