@@ -170,6 +170,7 @@ class PlayerBody extends Body {
       isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
     // collision between player and ball on floor
+    
     if (!this.hasBall && isBall && !isMoving) {
       // pick up corona
       this.ball = entity.body;
@@ -186,14 +187,8 @@ class PlayerBody extends Body {
         // if player is healthy and does not have ball, they catch corona
         // otherwise, nothing happens
         this.caughtCorona = true;
-        // Do we need the extra hasBall check? Even if they have a ball they should catch coronavirus
-        // if (!this.hasBall && !this.caughtCorona) {
-        //   console.log("CAUGHT CORONAVIRUS!!!!!!");
-        //   // ball is no longer moving
-        //   entity.body.moving = false;
-        //   // ball is on the floor again with no team
-        //   entity.body.team = null;
-        // }
+        entity.body.moving = false;
+        entity.body.team = null;
       }
 
       // collision between player and players
@@ -255,17 +250,17 @@ class BallBody extends Body {
 
     // collision
     this.bounce(entity);
-    // if (isBall) {
+    if (isBall) {
     // balls roll away, both balls becomes non-moving and ready for pickup
 
     // Turned off, can be changed
-    // this.moving = false;
-    // this.pickedUp = false;
-    // this.team = null;
-    // entity.body.moving = false;
-    // entity.body.pickedUp = false;
-    // entity.team = null;
-    // }
+    this.moving = false;
+    this.pickedUp = false;
+    this.team = null;
+    entity.body.moving = false;
+    entity.body.pickedUp = false;
+    entity.team = null;
+    }
   }
 }
 

@@ -200,7 +200,7 @@ class Room {
     const players = this.omitUninitialized(
       this.omitTeam(this.players, Room.Teams.SPECTATORS)
     );
-    for (let i = 0; i < players; i++) {
+    for (let i = 0; i < this.players.length; i++) {
       if (players[i].team === team && players[i].body.caughtCorona) {
         total += 1;
       }
@@ -220,17 +220,16 @@ class Room {
     const entities = allEntities.filter(
       (entity) => entity.body.pickedUp != true
     );
-    // console.log(entities);
 
     // update scoreboard
     let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
-      rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
-      leftTotal = this.leftPlayers.length,
-      rightTotal = this.rightPlayers.length;
+    rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
+    leftTotal = this.leftPlayers.length,
+    rightTotal = this.rightPlayers.length;
 
-    if (leftFallen === leftTotal && leftFallen > 0) {
+    if (leftFallen > 0 && leftFallen === leftTotal) {
       this._addGoal(Room.Teams.RIGHT);
-    } else if (rightFallen === rightTotal && rightFallen > 0) {
+    } else if (rightFallen > 0 && rightFallen === rightTotal) {
       this._addGoal(Room.Teams.LEFT);
     }
 
@@ -251,9 +250,6 @@ class Room {
         let circle2 = entities[i].body.circle;
         if (circle.intersect(circle2)) {
           entity.body.collide(entities[i]);
-          // if (entity.body.collide(entities[i])) {
-          //   this._addGoal(entity.body.collide(entities[i]));
-          // }
         }
       }
 
