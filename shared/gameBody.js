@@ -28,6 +28,30 @@ class Body {
     this.v.mul(0.95);
   }
   collide(obj) {}
+
+  //Bounces off entity
+  bounce(entity) {
+    let circle = entity.body.circle,
+      entVel = entity.body.prevVel,
+      //dist = entity.body.circle.distance(this.circle),
+      xDist = this.circle.x - circle.x,
+      yDist = this.circle.y - circle.y,
+
+      //Ball bounces off code
+      const impulseDir = new Vec2(xDist, yDist).normalize();
+      const impulse = impulseDir
+        .clone()
+        .mulScal(entVel.add(this.v, -1.0).dotP(impulseDir));
+      this.v.add(impulse, 1.0);
+
+      //This clears some space between the collision
+      this.circle.add(this.v);
+
+      //Loss of vel in collision
+      this.v.mulScal(0.8);      
+
+  }
+
   toArray() {
     const array = new Float32Array(this.arraySize);
     array.fill(0);
@@ -213,17 +237,7 @@ class BallBody extends Body {
     // collide between ball and ball
     if (isBall) {
       // balls roll away, both balls becomes non-moving and ready for pickup
-
-      //Ball bounces off code
-      const impulseDir = new Vec2(xDist, yDist).normalize();
-      const impulse = impulseDir
-        .clone()
-        .mulScal(entVel.add(this.v, -1.0).dotP(impulseDir));
-      this.v.add(impulse, 1.0);
-
-      //Loss of vel in collision
-      this.v.mulScal(0.8);
-
+      this.bounce(entity);
       //Turned off, can be changed
       //this.moving = false;
       this.pickedUp = false;
