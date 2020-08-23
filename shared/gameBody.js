@@ -33,7 +33,6 @@ class Body {
   bounce(entity) {
     // Check if one of the entities is a pickedUp ball
     if (this.pickedUp || entity.pickedUp) {
-      console.log("Ball is picked up")
       return;
     }
     let circle = entity.body.circle,
@@ -41,18 +40,30 @@ class Body {
       //dist = entity.body.circle.distance(this.circle),
       xDist = this.circle.x - circle.x,
       yDist = this.circle.y - circle.y,
-      vDif = this.v.clone().sub(entVel);
+      vDif = this.v.clone().sub(entVel),
+      massRatio = entity.body.circle.r ** 2 / this.circle.r ** 2,
+      dist = (xDist ** 2 + yDist ** 2) ** 0.5,
+      intersectionRatio = Math.max(
+        (entity.body.circle.r + this.circle.r - dist) / this.circle.r,
+        0
+      );
 
     //Ball bounces off code
     const impulseDir = new Vec2(xDist, yDist).normalize();
     if (vDif.dotP(impulseDir) < 0) {
       const impulse = impulseDir
         .clone()
-        .mulScal(entVel.add(this.v, -1.0).dotP(impulseDir));
+        .mulScal(entVel.add(this.v, -1.0).dotP(impulseDir) * massRatio);
       this.v.add(impulse, 1.0);
       //Loss of vel in collision
-      this.v.mulScal(0.8);
+      this.v.mulScal(0.7);
     }
+    // Add velocity for being inside another entity
+    // this.v.add(impulseDir.mul(intersectionRatio * 0.01));
+    // Clip the maximum speed
+    this.v = this.v.mul(
+      Math.min(this.v.length, 48 / this.circle.r) / this.v.length
+    );
 
     //This clears some space between the collision
     // this.circle.add(this.v);
@@ -105,7 +116,7 @@ class PlayerBody extends Body {
     this.speed = 1;
     this.mousePosition = new Vec2(0, 0); // in radians
     this.ball = null;
-    this.throwSpeed = 13;
+    this.throwSpeed = 8;
 
     // Sent to client
     this.team = 0;
@@ -159,7 +170,6 @@ class PlayerBody extends Body {
       isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
     // collision between player and ball on floor
-    console.log("Collision")
     if (!this.hasBall && isBall && !isMoving) {
       // pick up corona
       this.ball = entity.body;
@@ -281,6 +291,7 @@ class MedicBody extends CivilianBody {
     this.maxTime = 300;
     this.cureTimer = this.maxTime;
     this.savePlayer;
+    this.speed = 0.8;
 
     this.extraBoolAttrs.push("curingPlayer");
   }

@@ -131,7 +131,9 @@ class Room {
    */
   _alignOnBoard(player, index) {
     // list of all entities in the game
-    const entities = _.concat(this.players, this.balls);
+    const entities = this.omitUninitialized(
+      this.omitTeam(_.concat(this.players, this.balls), Room.Teams.SPECTATORS)
+    );
 
     if (player.team !== Room.Teams.SPECTATORS) {
       let goal = this.goals[player.team];
@@ -141,10 +143,12 @@ class Room {
       ];
 
       // Move to center if has collision
-      if (this.entities == null) return this;
-      for (let i = 0; i < this.entities.length; i++) {
-        if (i === index) continue;
-        while (!player.body.circle.intersect(entities[i].body.circle)) {
+      for (let i = 0; i < entities.length; i++) {
+        var otherBody = entities[i].body;
+        if (player.body == otherBody) continue;
+        // var c = 0;
+        while (player.body.circle.intersect(otherBody.circle)) {
+          console.log("aligning", player.body.circle.xy);
           let direction = this.board.center.sub(player.body.circle).normalize();
           player.body.circle.add(direction.mul(player.body.circle.r * 2 + 2));
         }
@@ -254,13 +258,12 @@ class Room {
       }
 
       // Check collisions with borders
-      this._calcBordersCollisions(entity.body, !isBall && 64);
+      this._calcBordersCollisions(entity.body, 0);
 
       // Update
+    });
+    _.each(entities, (entity) => {
       entity.body.update(this);
-
-      let mouse_pos_x = entity.mouse_position_x || 0.0;
-      let mouse_pos_y = entity.mouse_position_y || 0.0;
     });
 
     const bodiesToRender = [];
@@ -303,9 +306,10 @@ class Room {
    */
   start() {
     console.log("Game start");
+    const players = this.omitTeam(this.players, Room.Teams.SPECTATORS);
     // Creating new player bodies and adding to players list
-    for (let i = 0; i < this.players.length; i++) {
-      var player = this.players[i];
+    for (let i = 0; i < players.length; i++) {
+      var player = players[i];
       console.log(
         this.roles[player.team].MEDIC,
         player in this.roles[player.team].MEDIC
@@ -317,7 +321,7 @@ class Room {
       }
       player.body.team = player.team;
     }
-    this.players.forEach((player) => this._alignOnBoard(player));
+    players.forEach((player) => this._alignOnBoard(player));
 
     // Assign roles
 
@@ -328,7 +332,7 @@ class Room {
     this.physicsInterval && this.stop();
     this.physicsInterval = setInterval(
       this._updatePhysics.bind(this),
-      1000 / 60
+      500 / 60
     );
 
     // Reset scoreboard

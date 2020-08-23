@@ -127,7 +127,8 @@ class Player {
 
       /** Move body */
       .on("move", (dir) => {
-        if (this.body && this.body.v.length <= 1.8) this.body.v.add(dir, 0.35);
+        if (this.body && this.body.v.length <= this.body.speed)
+          this.body.v.add(dir, 0.35);
       })
       .on("throw", (vec) => {
         if (this.body) {
