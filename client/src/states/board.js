@@ -454,9 +454,9 @@ Board.SettingsPopup = class extends Popup {
         _.partial(Client.emit, "roomStart", null)
       );
 
-    this.matchPanel
-      .add(new Button(new Rect(0, 0, 64, 0), "Medic"), { fill: [0, 1] })
-      .addForwarder(Message.Type.MOUSE_CLICK, this._makeMedic.bind(this));
+    // this.matchPanel
+    //   .add(new Button(new Rect(0, 0, 64, 0), "Medic"), { fill: [0, 1] })
+    //   .addForwarder(Message.Type.MOUSE_CLICK, this._makeMedic.bind(this));
 
     // Make Jacinda
     // this.matchPanel
