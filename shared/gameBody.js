@@ -31,25 +31,31 @@ class Body {
 
   //Bounces off entity
   bounce(entity) {
+    // Check if one of the entities is a pickedUp ball
+    if (this.pickedUp || entity.pickedUp) {
+      console.log("Ball is picked up")
+      return;
+    }
     let circle = entity.body.circle,
       entVel = entity.body.prevVel,
       //dist = entity.body.circle.distance(this.circle),
       xDist = this.circle.x - circle.x,
-      yDist = this.circle.y - circle.y;
+      yDist = this.circle.y - circle.y,
+      vDif = this.v.clone().sub(entVel);
 
     //Ball bounces off code
     const impulseDir = new Vec2(xDist, yDist).normalize();
-    const impulse = impulseDir
-      .clone()
-      .mulScal(entVel.add(this.v, -1.0).dotP(impulseDir));
-    this.v.add(impulse, 1.0);
+    if (vDif.dotP(impulseDir) < 0) {
+      const impulse = impulseDir
+        .clone()
+        .mulScal(entVel.add(this.v, -1.0).dotP(impulseDir));
+      this.v.add(impulse, 1.0);
+      //Loss of vel in collision
+      this.v.mulScal(0.8);
+    }
 
     //This clears some space between the collision
-    this.circle.add(this.v);
-
-    //Loss of vel in collision
-    this.v.mulScal(0.8);      
-
+    // this.circle.add(this.v);
   }
 
   toArray() {
@@ -153,42 +159,47 @@ class PlayerBody extends Body {
       isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
     // collision between player and ball on floor
-    if (isBall && !isMoving) {
+    console.log("Collision")
+    if (!this.hasBall && isBall && !isMoving) {
       // pick up corona
-      if (!this.hasBall) {
-        this.ball = entity.body;
-        this.hasBall = true;
-        entity.body.pickedUp = true;
-        entity.body.team = this.team;
-        circle.x = this.circle.x;
-        circle.y = this.circle.y;
-        v.x = this.v.x;
-        v.y = this.v.y;
- 
-      }
-    }
-
-    // collision between player and moving ball
-    if (isBall && isMoving && entity.body.team != this.team) {
-      // if player has ball or already caught corona, nothing happens
-      // otherwise, they catch corona
-      if (!this.hasBall && !this.caughtCorona) {
+      this.ball = entity.body;
+      this.hasBall = true;
+      entity.body.pickedUp = true;
+      entity.body.team = this.team;
+      circle.x = this.circle.x;
+      circle.y = this.circle.y;
+      v.x = this.v.x;
+      v.y = this.v.y;
+    } else {
+      // collision between player and moving ball FROM DIFFERENT TEAM
+      if (isBall && isMoving && entity.body.team != this.team) {
+        // if player is healthy and does not have ball, they catch corona
+        // otherwise, nothing happens
         this.caughtCorona = true;
-        // ball bounces off
-        this.bounce(entity);
-        // ball is no longer moving
-        entity.body.moving = false;
-        // ball is on the floor again with no team
-        entity.body.team = null;
+        // Do we need the extra hasBall check? Even if they have a ball they should catch coronavirus
+        // if (!this.hasBall && !this.caughtCorona) {
+        //   console.log("CAUGHT CORONAVIRUS!!!!!!");
+        //   // ball is no longer moving
+        //   entity.body.moving = false;
+        //   // ball is on the floor again with no team
+        //   entity.body.team = null;
+        // }
       }
-    }
 
-    // collision between player and players
-    if (!isBall) {
-      // if healthy player runs into sick player, they become sick
-      if (!this.caughtCorona && entity.body.caughtCorona) {
-        this.caughtCorona = true;
-      }      
+      // collision between player and players
+      if (!isBall) {
+        // if healthy player runs into sick player, they become sick
+        if (
+          !this.caughtCorona &&
+          this.type != Body.TYPES.MEDIC &&
+          entity.body.caughtCorona
+        ) {
+          this.caughtCorona = true;
+        }
+      }
+
+      // EVERYTHING BOUNCE OFF EACH OTHER !!!!
+      this.bounce(entity);
     }
     return null;
   }
@@ -232,20 +243,19 @@ class BallBody extends Body {
       isMedic = entity.body.type === Body.TYPES.MEDIC,
       isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
-    // collide between ball and ball
-    if (isBall) {
-      // balls roll away, both balls becomes non-moving and ready for pickup
+    // collision
+    this.bounce(entity);
+    // if (isBall) {
+    // balls roll away, both balls becomes non-moving and ready for pickup
 
-      this.bounce(entity);
-
-      // Turned off, can be changed
-      this.moving = false;
-      this.pickedUp = false;
-      this.team = null;
-      entity.body.moving = false;
-      entity.body.pickedUp = false;
-      entity.team = null;
-    }
+    // Turned off, can be changed
+    // this.moving = false;
+    // this.pickedUp = false;
+    // this.team = null;
+    // entity.body.moving = false;
+    // entity.body.pickedUp = false;
+    // entity.team = null;
+    // }
   }
 }
 
@@ -259,7 +269,6 @@ class CivilianBody extends PlayerBody {
 
     this.extraBoolAttrs.push("wearingMask");
   }
-  
 }
 
 class MedicBody extends CivilianBody {

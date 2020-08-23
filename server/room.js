@@ -212,7 +212,11 @@ class Room {
     const players = this.omitUninitialized(
       this.omitTeam(Room.Teams.SPECTATORS)
     );
-    const entities = _.concat(players, this.balls);
+    const allEntities = _.concat(players, this.balls);
+    const entities = allEntities.filter(
+      (entity) => entity.body.pickedUp != true
+    );
+    // console.log(entities);
 
     // update scoreboard
     let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
@@ -286,6 +290,14 @@ class Room {
     }
   }
 
+  _resetScoreboard() {
+    this.goals = {
+      0: { size: 30, sign: -1, p1: [0, 70], p2: [0, 230], score: 0 },
+      2: { size: 30, sign: 1, p1: [600, 70], p2: [600, 230], score: 0 },
+    };
+    console.log("IM CALLED");
+  }
+
   /**
    * Start/stop room loop
    */
@@ -307,7 +319,7 @@ class Room {
     }
     this.players.forEach((player) => this._alignOnBoard(player));
 
-    // assign roles
+    // Assign roles
 
     // Set balls
     this._createBalls();
@@ -318,6 +330,9 @@ class Room {
       this._updatePhysics.bind(this),
       1000 / 60
     );
+
+    // Reset scoreboard
+    this._resetScoreboard();
   }
 
   stop() {
