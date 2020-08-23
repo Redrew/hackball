@@ -17,6 +17,7 @@ import Table from "../ui/table";
 import Message from "../engine/message";
 import Client from "../multiplayer/client";
 import { entitiesFromArray, Body } from "../../../shared/gameBody";
+import CONFIG from "../../../shared/config";
 
 /**
  * Core game state, it shows rooms gameplay
@@ -161,7 +162,7 @@ Board.Projector = class extends Layer {
         new Vec2(this.board.w / 2, 0),
         2
       );
-    
+
     // Render ping
     context
       .fillWith(Color.Hex.WHITE)
@@ -203,7 +204,7 @@ Board.Projector = class extends Layer {
 
     // Render players
     context.setFontSize(16);
-    console.log(this.bodies);
+    // console.log(this.bodies);
     _.each(this.bodies, (body, index) => {
       let isBall = body.type === Body.TYPES.BALL;
       let circle = body.circle;
@@ -212,19 +213,19 @@ Board.Projector = class extends Layer {
       this.tile.rect.w = this.tile.rect.h = circle.r * 2;
 
       // Render sprite
-      if (!isBall) console.log(body);
       var colorIndex = body.team != 0 ? 0 : 2;
       if (isBall && !body.moving) colorIndex = 1;
       if (body.type === Body.TYPES.PLAYER && body.caughtCorona) colorIndex = 1;
       this.tile.tileIndex.xy = [colorIndex, 0];
       this.tile.draw(context);
+      var name = body.type === Body.TYPES.MEDIC ? "+" : index;
 
-      // Draw index
+      // Draw name
       if (!isBall) {
         context
           .fillWith(Color.Hex.WHITE)
           .drawText(
-            index,
+            name,
             new Vec2(
               this.tile.rect.x + circle.r - 5,
               this.tile.rect.y + this.tile.rect.h - 7
@@ -323,6 +324,12 @@ Board.SettingsPopup = class extends Popup {
     super(Layer.VBox, new Rect(0, 0, 500, 300), "Room settings");
   }
 
+  cleanTags(name) {
+    if (!name) {
+      return name;
+    }
+    return name.replace("+", "");
+  }
   /**
    * Get selected player from teams listBoxes
    */
@@ -333,7 +340,7 @@ Board.SettingsPopup = class extends Popup {
         .values()
 
         // Map listBox selected values and remove null
-        .map((table) => table.listbox.selected)
+        .map((table) => this.cleanTags(table.listbox.selected))
         .filter((element) => element)
 
         // Get first from array
@@ -353,9 +360,10 @@ Board.SettingsPopup = class extends Popup {
         newTeam = index + next;
 
       // Move selected to other team
+      // TODO: filter nickname here
       if (selected && this.teams[newTeam]) {
         Client.emit("setTeam", {
-          nick: selected,
+          nick: this.cleanTags(selected),
           team: newTeam,
         });
         return false;
@@ -391,6 +399,39 @@ Board.SettingsPopup = class extends Popup {
     return this;
   }
 
+  _makeMedic() {
+    for (var i = 0; i < this.teams.length; i++) {
+      if (i == 1) continue;
+      let table = this.teams[i];
+      if (table.listbox.length < CONFIG.minMedicTeamSize) {
+        Popup.confirm(this, "Teams need to be larger than three");
+        return;
+      }
+    }
+    const selected = this.selectedPlayer;
+    if (selected) {
+      Client.emit("setRole", { nick: selected, role: "MEDIC" });
+    }
+    for (i = 0; i < this.teams.length; i++) {
+      if (i == 1) continue;
+      let table = this.teams[i];
+      let selected = table.listbox.selected;
+      if (selected) {
+        let selectedIndex = table.listbox.selectedIndex;
+        console.log(table.listbox.children[selectedIndex]);
+        table.listbox.children[selectedIndex].children[0].text = selected + "+";
+        break;
+      }
+      // Move selected to other team
+      // if (selected && this.teams[newTeam]) {
+      //   Client.emit("setTeam", {
+      //     nick: selected,
+      //     team: newTeam,
+      //   });
+      //   return false;
+      // }
+    }
+  }
   /**
    * Create user management panel
    * @private
@@ -415,15 +456,14 @@ Board.SettingsPopup = class extends Popup {
 
     this.matchPanel
       .add(new Button(new Rect(0, 0, 64, 0), "Medic"), { fill: [0, 1] })
-      .addForwarder(Message.Type.MOUSE_CLICK, () => {
-        console.log("Make medic");
-      });
+      .addForwarder(Message.Type.MOUSE_CLICK, this._makeMedic.bind(this));
 
-    this.matchPanel
-      .add(new Button(new Rect(0, 0, 64, 0), "Jacinda"), { fill: [0, 1] })
-      .addForwarder(Message.Type.MOUSE_CLICK, () => {
-        console.log("Make Jacinda");
-      });
+    // Make Jacinda
+    // this.matchPanel
+    //   .add(new Button(new Rect(0, 0, 64, 0), "Jacinda"), { fill: [0, 1] })
+    //   .addForwarder(Message.Type.MOUSE_CLICK, () => {
+    //     console.log("Make Jacinda");
+    //   });
     return this;
   }
 

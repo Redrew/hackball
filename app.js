@@ -103,6 +103,13 @@ class Player {
         player && player.room.setTeam(player, data.team);
       })
 
+      /** Set player role */
+      .on("setRole", (data) => {
+        let player = Player.nick(data.nick);
+        player.room.setRole(player, data.role);
+        // player && player
+      })
+
       /** Leave from room */
       .on("roomLeave", (nick) => {
         this.room && this.room.leave(Player.nick(nick));

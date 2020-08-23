@@ -28,12 +28,16 @@ class Room {
       0: { size: 30, sign: -1, p1: [0, 70], p2: [0, 230], score: 0 },
       2: { size: 30, sign: 1, p1: [600, 70], p2: [600, 230], score: 0 },
     };
+    this.roles = {
+      0: { MEDIC: [] },
+      2: { MEDIC: [] },
+    };
 
     // Players
     this.players = [];
     this.admin = admin;
     this.join(admin);
-  
+
     // Count for players in each team
     this.leftPlayers = [];
     this.rightPlayers = [];
@@ -138,7 +142,7 @@ class Room {
 
       // Move to center if has collision
       if (this.entities == null) return this;
-      for (let i=0; i<this.entities.length; i++) {
+      for (let i = 0; i < this.entities.length; i++) {
         if (i === index) continue;
         while (!player.body.circle.intersect(entities[i].body.circle)) {
           let direction = this.board.center.sub(player.body.circle).normalize();
@@ -189,10 +193,11 @@ class Room {
 
   _calcCoronavirusTotal(team) {
     let total = 0;
-    for (let i=0; i<this.players.length; i++) {
-      if (this.players[i] !== null &&
-        this.players[i].team === team && 
-        this.players[i].body.caughtCorona) {
+    const players = this.omitUninitialized(
+      this.omitTeam(this.players, Room.Teams.SPECTATORS)
+    );
+    for (let i = 0; i < players; i++) {
+      if (players[i].team === team && players[i].body.caughtCorona) {
         total += 1;
       }
     }
@@ -208,20 +213,6 @@ class Room {
       this.omitTeam(Room.Teams.SPECTATORS)
     );
     const entities = _.concat(players, this.balls);
-    
-    // update scoreboard
-    let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
-      rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
-      leftTotal = this.leftPlayers.length,
-      rightTotal = this.rightPlayers.length;
-
-    if (leftFallen === leftTotal && leftFallen > 0) {
-      this._addGoal(Room.Teams.RIGHT);
-    }
-
-    else if (rightFallen === rightTotal && rightFallen > 0) {
-      this._addGoal(Room.Teams.LEFT); 
-    }
 
     // update scoreboard
     let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
@@ -231,10 +222,8 @@ class Room {
 
     if (leftFallen === leftTotal && leftFallen > 0) {
       this._addGoal(Room.Teams.RIGHT);
-    }
-
-    else if (rightFallen === rightTotal && rightFallen > 0) {
-      this._addGoal(Room.Teams.LEFT); 
+    } else if (rightFallen === rightTotal && rightFallen > 0) {
+      this._addGoal(Room.Teams.LEFT);
     }
 
     _.each(entities, (entity, index) => {
@@ -305,7 +294,15 @@ class Room {
     // Creating new player bodies and adding to players list
     for (let i = 0; i < this.players.length; i++) {
       var player = this.players[i];
-      player.body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0));
+      console.log(
+        this.roles[player.team].MEDIC,
+        player in this.roles[player.team].MEDIC
+      );
+      if (this.roles[player.team].MEDIC.includes(player)) {
+        player.body = new ge.MedicBody(new Circle(60, 60, 13), new Vec2(0, 0));
+      } else {
+        player.body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0));
+      }
       player.body.team = player.team;
     }
     this.players.forEach((player) => this._alignOnBoard(player));
@@ -327,6 +324,19 @@ class Room {
     clearInterval(this.physicsInterval);
   }
 
+  setRole(player, role) {
+    console.log(role);
+    this.roles[player.team][role] = [player];
+    console.log(this.roles);
+  }
+
+  removeFromRoles(player) {
+    _.keys(this.roles, (team) => {
+      _.keys(this.roles[team], (role) => {
+        _.remove(this.roles[team][role], player);
+      });
+    });
+  }
   /**
    * Set player team
    * @param player    Player
@@ -336,10 +346,15 @@ class Room {
   setTeam(player, newTeam) {
     // Create new body
     player.team = newTeam;
+
+    // Remove team based trackers on player
+    _.remove(this.leftPlayers, player);
+    _.remove(this.rightPlayers, player);
+    this.removeFromRoles(player);
+
     if (newTeam === Room.Teams.LEFT) {
       this.leftPlayers.push(player);
-    }
-    else if (newTeam === Room.Teams.RIGHT) {
+    } else if (newTeam === Room.Teams.RIGHT) {
       this.rightPlayers.push(player);
     }
     this._broadcastSettings();
@@ -418,6 +433,9 @@ class Room {
     player.room = player.team = null;
 
     _.remove(this.players, player);
+
+    // Remove from roles dictionary
+    this.removeFromRoles(player);
     this.admin === player && this.destroy();
     return this;
   }
