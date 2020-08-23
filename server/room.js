@@ -4,7 +4,7 @@ const md5 = require("blueimp-md5"),
 
 const { Vec2, Circle, Rect } = require("../shared/math"),
   config = require("../shared/config"),
-  io = require("../app"),
+  io = require("../index"),
   ge = require("../shared/gameBody");
 console.log(config);
 
@@ -97,6 +97,10 @@ class Room {
    */
   omitTeam(omit) {
     return _.filter(this.players, (player) => player.team !== omit);
+  }
+
+  omitUninitialized(entities) {
+    return _.filter(entities, (entity) => entity.body != null);
   }
 
   /**
@@ -196,7 +200,9 @@ class Room {
    * @private
    */
   _updatePhysics() {
-    const players = this.omitTeam(Room.Teams.SPECTATORS);
+    const players = this.omitUninitialized(
+      this.omitTeam(Room.Teams.SPECTATORS)
+    );
     const entities = _.concat(players, this.balls);
     
     // update scoreboard
@@ -230,6 +236,9 @@ class Room {
         let circle2 = entities[i].body.circle;
         if (circle.intersect(circle2)) {
           entity.body.collide(entities[i]);
+          // if (entity.body.collide(entities[i])) {
+          //   this._addGoal(entity.body.collide(entities[i]));
+          // }
         }
       }
 
@@ -238,10 +247,6 @@ class Room {
 
       // Update
       entity.body.update(this);
-
-      // Update physics
-      circle.add(v);
-      v.mul(0.95);
 
       let mouse_pos_x = entity.mouse_position_x || 0.0;
       let mouse_pos_y = entity.mouse_position_y || 0.0;
@@ -278,13 +283,14 @@ class Room {
    * Start/stop room loop
    */
   start() {
+    console.log("Game start");
     // Creating new player bodies and adding to players list
     for (let i = 0; i < this.players.length; i++) {
       var player = this.players[i];
       player.body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0));
       player.body.team = player.team;
-      this._alignOnBoard(player, i);
     }
+    this.players.forEach((player) => this._alignOnBoard(player));
 
     // assign roles
 

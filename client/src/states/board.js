@@ -161,6 +161,12 @@ Board.Projector = class extends Layer {
         new Vec2(this.board.w / 2, 0),
         2
       );
+    
+    // Render ping
+    context
+      .fillWith(Color.Hex.WHITE)
+      .setFontSize(8)
+      .drawText(`Ping: ${Client.ping}`, new Vec2(0, 0));
 
     // Render goals
     // context.strokeWith(Color.Hex.WHITE);
@@ -197,6 +203,7 @@ Board.Projector = class extends Layer {
 
     // Render players
     context.setFontSize(16);
+    console.log(this.bodies);
     _.each(this.bodies, (body, index) => {
       let isBall = body.type === Body.TYPES.BALL;
       let circle = body.circle;
@@ -206,7 +213,10 @@ Board.Projector = class extends Layer {
 
       // Render sprite
       if (!isBall) console.log(body);
-      this.tile.tileIndex.xy = [isBall ? 1 : body.team != 0 ? 0 : 2, 0];
+      var colorIndex = body.team != 0 ? 0 : 2;
+      if (isBall && !body.moving) colorIndex = 1;
+      if (body.type === Body.TYPES.PLAYER && body.caughtCorona) colorIndex = 1;
+      this.tile.tileIndex.xy = [colorIndex, 0];
       this.tile.draw(context);
 
       // Draw index

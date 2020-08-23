@@ -4,8 +4,8 @@
   "description": "Simple haxball clone written in ES6",
   "main": "server/player.js",
   "scripts": {
-    "start": "node server/player.js",
-    "watch": "nodemon server/player.js",
+    "start": "node app.js",
+    "watch": "nodemon app.js",
     "fix-gulp": "npx npm-force-resolutions && npm install"
   },
   "resolutions": {

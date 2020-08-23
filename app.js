@@ -5,7 +5,7 @@ const validate = require("validate.js"),
 
 const { Room } = require("./server/room"),
   { Vec2 } = require("./shared/math"),
-  io = require("./unnamed");
+  io = require("./index");
 
 /**
  * Player socket class
@@ -125,9 +125,7 @@ class Player {
       .on("throw", (vec) => {
         if (this.body) {
           this.body.throwing = true;
-          this.body.throwDirection = new Vec2(vec.x, vec.y)
-            .sub(this.body.circle)
-            .normalize();
+          this.body.mousePosition = new Vec2(vec.x, vec.y);
         }
       })
       // .on("mouse_position", (vec) => {
