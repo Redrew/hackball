@@ -170,6 +170,22 @@ class Room {
   }
 
   /**
+   * 
+   * @param {*} body 
+   * @param {*} margin 
+   */
+  _checkParliamentCollisions(circle, team) {
+    let leftParliament = new Rect(10, 10, 60, 25);
+    let rightParliament = new Rect(this.board.w - 70, this.board.h-35, 60, 25);
+    if (team === Room.Teams.LEFT) {
+      return circle.intersect(rightParliament)
+    }
+    else if (team === Room.Teams.RIGHT) {
+      return circle.intersect(leftParliament);
+    }
+  }
+
+  /**
    * Check collisions with board border
    * @param body    a class from gameBody.js
    * @param margin  Margin
@@ -257,8 +273,15 @@ class Room {
       // Check collisions with borders
       this._calcBordersCollisions(entity.body, 0);
 
-      // Update
+      // Check collisions with opponent's parliament 
+      if (isJacinda && checkParliamentCollisions(circle, entity.team)) {
+        // automatic point
+        this._addGoal(entity.team);
+      }
+      
     });
+
+
     _.each(entities, (entity) => {
       entity.body.update(this);
     });
@@ -297,6 +320,8 @@ class Room {
     };
     console.log("IM CALLED");
   }
+
+  
 
   /**
    * Start/stop room loop
