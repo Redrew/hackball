@@ -28,12 +28,20 @@ class Room {
       0: { size: 30, sign: -1, p1: [0, 70], p2: [0, 230], score: 0 },
       2: { size: 30, sign: 1, p1: [600, 70], p2: [600, 230], score: 0 },
     };
+    this.roles = {
+      0: { MEDIC: [] },
+      2: { MEDIC: [] },
+    };
 
     // Players
     this.players = [];
     this.admin = admin;
     this.join(admin);
-  
+
+    // Count for players in each team
+    this.leftPlayers = [];
+    this.rightPlayers = [];
+
     // Count for players in each team
     this.leftPlayers = [];
     this.rightPlayers = [];
@@ -123,7 +131,9 @@ class Room {
    */
   _alignOnBoard(player, index) {
     // list of all entities in the game
-    const entities = _.concat(this.players, this.balls);
+    const entities = this.omitUninitialized(
+      this.omitTeam(_.concat(this.players, this.balls), Room.Teams.SPECTATORS)
+    );
 
     if (player.team !== Room.Teams.SPECTATORS) {
       let goal = this.goals[player.team];
@@ -133,10 +143,12 @@ class Room {
       ];
 
       // Move to center if has collision
-      if (this.entities == null) return this;
-      for (let i=0; i<this.entities.length; i++) {
-        if (i === index) continue;
-        while (!player.body.circle.intersect(entities[i].body.circle)) {
+      for (let i = 0; i < entities.length; i++) {
+        var otherBody = entities[i].body;
+        if (player.body == otherBody) continue;
+        // var c = 0;
+        while (player.body.circle.intersect(otherBody.circle)) {
+          console.log("aligning", player.body.circle.xy);
           let direction = this.board.center.sub(player.body.circle).normalize();
           player.body.circle.add(direction.mul(player.body.circle.r * 2 + 2));
         }
@@ -185,10 +197,11 @@ class Room {
 
   _calcCoronavirusTotal(team) {
     let total = 0;
-    for (let i=0; i<this.players.length; i++) {
-      if (this.players[i] !== null &&
-        this.players[i].team === team && 
-        this.players[i].body.caughtCorona) {
+    const players = this.omitUninitialized(
+      this.omitTeam(this.players, Room.Teams.SPECTATORS)
+    );
+    for (let i = 0; i < this.players.length; i++) {
+      if (players[i].team !== null && players[i].team === team && players[i].body.caughtCorona) {
         total += 1;
       }
     }
@@ -203,20 +216,22 @@ class Room {
     const players = this.omitUninitialized(
       this.omitTeam(Room.Teams.SPECTATORS)
     );
-    const entities = _.concat(players, this.balls);
-    
+    const allEntities = _.concat(players, this.balls);
+    const entities = allEntities.filter(
+      (entity) => entity.body.pickedUp != true
+    );
+
     // update scoreboard
     let leftFallen = this._calcCoronavirusTotal(Room.Teams.LEFT),
-      rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
-      leftTotal = this.leftPlayers.length,
-      rightTotal = this.rightPlayers.length;
+    rightFallen = this._calcCoronavirusTotal(Room.Teams.RIGHT),
+    leftTotal = this.leftPlayers.length,
+    rightTotal = this.rightPlayers.length;
 
-    if (leftFallen === leftTotal && leftFallen > 0) {
+    if (leftFallen > 0 && leftFallen === leftTotal) {
       this._addGoal(Room.Teams.RIGHT);
-    }
-
-    else if (rightFallen === rightTotal && rightFallen > 0) {
-      this._addGoal(Room.Teams.LEFT); 
+      
+    } else if (rightFallen > 0 && rightFallen === rightTotal) {
+      this._addGoal(Room.Teams.LEFT);
     }
 
     _.each(entities, (entity, index) => {
@@ -236,20 +251,16 @@ class Room {
         let circle2 = entities[i].body.circle;
         if (circle.intersect(circle2)) {
           entity.body.collide(entities[i]);
-          // if (entity.body.collide(entities[i])) {
-          //   this._addGoal(entity.body.collide(entities[i]));
-          // }
         }
       }
 
       // Check collisions with borders
-      this._calcBordersCollisions(entity.body, !isBall && 64);
+      this._calcBordersCollisions(entity.body, 0);
 
       // Update
+    });
+    _.each(entities, (entity) => {
       entity.body.update(this);
-
-      let mouse_pos_x = entity.mouse_position_x || 0.0;
-      let mouse_pos_y = entity.mouse_position_y || 0.0;
     });
 
     const bodiesToRender = [];
@@ -279,20 +290,37 @@ class Room {
     }
   }
 
+  _resetScoreboard() {
+    this.goals = {
+      0: { size: 30, sign: -1, p1: [0, 70], p2: [0, 230], score: 0 },
+      2: { size: 30, sign: 1, p1: [600, 70], p2: [600, 230], score: 0 },
+    };
+    console.log("IM CALLED");
+  }
+
   /**
    * Start/stop room loop
    */
   start() {
     console.log("Game start");
+    const players = this.omitTeam(this.players, Room.Teams.SPECTATORS);
     // Creating new player bodies and adding to players list
-    for (let i = 0; i < this.players.length; i++) {
-      var player = this.players[i];
-      player.body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0));
+    for (let i = 0; i < players.length; i++) {
+      var player = players[i];
+      console.log(
+        this.roles[player.team].MEDIC,
+        player in this.roles[player.team].MEDIC
+      );
+      if (this.roles[player.team].MEDIC.includes(player)) {
+        player.body = new ge.MedicBody(new Circle(60, 60, 13), new Vec2(0, 0));
+      } else {
+        player.body = new ge.PlayerBody(new Circle(60, 60, 13), new Vec2(0, 0));
+      }
       player.body.team = player.team;
     }
-    this.players.forEach((player) => this._alignOnBoard(player));
+    players.forEach((player) => this._alignOnBoard(player));
 
-    // assign roles
+    // Assign roles
 
     // Set balls
     this._createBalls();
@@ -301,14 +329,30 @@ class Room {
     this.physicsInterval && this.stop();
     this.physicsInterval = setInterval(
       this._updatePhysics.bind(this),
-      1000 / 60
+      500 / 60
     );
+
+    // Reset scoreboard
+    // this._resetScoreboard();
   }
 
   stop() {
     clearInterval(this.physicsInterval);
   }
 
+  setRole(player, role) {
+    console.log(role);
+    this.roles[player.team][role] = [player];
+    console.log(this.roles);
+  }
+
+  removeFromRoles(player) {
+    _.keys(this.roles, (team) => {
+      _.keys(this.roles[team], (role) => {
+        _.remove(this.roles[team][role], player);
+      });
+    });
+  }
   /**
    * Set player team
    * @param player    Player
@@ -318,10 +362,15 @@ class Room {
   setTeam(player, newTeam) {
     // Create new body
     player.team = newTeam;
+
+    // Remove team based trackers on player
+    _.remove(this.leftPlayers, player);
+    _.remove(this.rightPlayers, player);
+    this.removeFromRoles(player);
+
     if (newTeam === Room.Teams.LEFT) {
       this.leftPlayers.push(player);
-    }
-    else if (newTeam === Room.Teams.RIGHT) {
+    } else if (newTeam === Room.Teams.RIGHT) {
       this.rightPlayers.push(player);
     }
     this._broadcastSettings();
@@ -400,6 +449,9 @@ class Room {
     player.room = player.team = null;
 
     _.remove(this.players, player);
+
+    // Remove from roles dictionary
+    this.removeFromRoles(player);
     this.admin === player && this.destroy();
     return this;
   }
