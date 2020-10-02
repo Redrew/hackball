@@ -103,6 +103,13 @@ class Player {
         player && player.room.setTeam(player, data.team);
       })
 
+      /** Set player role */
+      .on("setRole", (data) => {
+        let player = Player.nick(data.nick);
+        player.room.setRole(player, data.role);
+        // player && player
+      })
+
       /** Leave from room */
       .on("roomLeave", (nick) => {
         this.room && this.room.leave(Player.nick(nick));
@@ -120,7 +127,8 @@ class Player {
 
       /** Move body */
       .on("move", (dir) => {
-        if (this.body && this.body.v.length <= 1.8) this.body.v.add(dir, 0.35);
+        if (this.body && this.body.v.length <= this.body.speed)
+          this.body.v.add(dir, 0.35);
       })
       .on("throw", (vec) => {
         if (this.body) {

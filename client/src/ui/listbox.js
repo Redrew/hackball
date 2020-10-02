@@ -24,9 +24,15 @@ export default class ListBox extends Layer {
     this.padding.xy = [0, 1];
   }
 
+  get length() {
+    return this.children.length;
+  }
+
   /** @inheritdoc */
-  init()  {
-    this.scrollbar = new ScrollBar(new Rect(this.rect.x + this.rect.w - 12, this.rect.y, 12, this.rect.h));
+  init() {
+    this.scrollbar = new ScrollBar(
+      new Rect(this.rect.x + this.rect.w - 12, this.rect.y, 12, this.rect.h)
+    );
     this.scrollbar.addForwarder(Message.Type.MOUSE_DRAG, () => {
       this.setVisibleChildren(this.scrollbar.position, this.scrollbar.visible);
     });
@@ -40,8 +46,7 @@ export default class ListBox extends Layer {
   setVisibleChildren(start, visible) {
     let pos = 0;
     _.each(this.children, (child, index) => {
-      if(index < start || index >= start + visible)
-        child.disabled = true;
+      if (index < start || index >= start + visible) child.disabled = true;
       else {
         child.disabled = false;
 
@@ -52,22 +57,34 @@ export default class ListBox extends Layer {
     });
   }
 
+  get selectedIndex() {
+    const indices = [];
+    this.children.forEach((child, index) => {
+      if (child.checked === true) {
+        indices.push(index);
+      }
+    });
+    return _.chain(indices)
+      .thru((array) => {
+        if (!array.length) return null;
+        return array.length && !this.multiselect ? array[0] : array;
+      })
+      .value();
+  }
   /**
    * Return selected items
    * @returns {Array} Array of controls
    */
   get selected() {
-    return _
-      .chain(this.children)
+    return _.chain(this.children)
       .filter({ checked: true })
-      .map(child => {
+      .map((child) => {
         return child.children.length === 1
           ? child.children[0].text
           : _.map(child.children, _.partial(_.get, _, "text"));
       })
-      .thru(array => {
-        if(!array.length)
-          return null;
+      .thru((array) => {
+        if (!array.length) return null;
         return array.length && !this.multiselect ? array[0] : array;
       })
       .value();
@@ -89,7 +106,9 @@ export default class ListBox extends Layer {
    * @returns {ListBox}
    */
   deselect() {
-    this.children.forEach((child) => {child.checked=false})
+    this.children.forEach((child) => {
+      child.checked = false;
+    });
     return this;
   }
 
@@ -99,9 +118,7 @@ export default class ListBox extends Layer {
 
     // Border
     this.scrollbar.draw(context);
-    context
-      .strokeWith(Color.Hex.LIGHT_GRAY)
-      .strokeRect(this.rect);
+    context.strokeWith(Color.Hex.LIGHT_GRAY).strokeRect(this.rect);
   }
 
   /**
@@ -112,7 +129,7 @@ export default class ListBox extends Layer {
   _calcVisibleRows() {
     // Manage scrollbar
     this.scrollbar.setTotal(this.children.length - 1);
-    if(!this.scrollbar.visible)
+    if (!this.scrollbar.visible)
       this.scrollbar.visible = Math.floor(this.rect.h / this.lineHeight);
 
     // Overflow is hidden
@@ -135,17 +152,19 @@ export default class ListBox extends Layer {
     child.rect.h = this.lineHeight;
 
     // Add to panel
-    super.add(child, opts || { fill: [1.0, .0] });
+    super.add(child, opts || { fill: [1.0, 0.0] });
     this._calcVisibleRows();
     return child;
   }
 
   /** @inheritdoc */
   onEvent(event) {
-    if(this.scrollbar.onEvent(event) === false && event.type === Message.Type.MOUSE_CLICK) {
+    if (
+      this.scrollbar.onEvent(event) === false &&
+      event.type === Message.Type.MOUSE_CLICK
+    ) {
       // Deselect all
-      if(!this.multiselect && this.rect.contains(event.data))
-        this.deselect();
+      if (!this.multiselect && this.rect.contains(event.data)) this.deselect();
 
       // Check is selected
       super.onEvent(event);
@@ -159,29 +178,27 @@ export default class ListBox extends Layer {
  */
 ListBox.Item = class extends Radio {
   constructor(text) {
-    super(new Rect, text);
+    super(new Rect(), text);
     this.border.xy = [0, 1];
   }
 
   /** @inheritdoc */
   draw(context) {
     let fillColor = Color.parseHex(
-      this.checked
-        ? Color.Hex.WHITE
-        : Color.Hex.BLACK
+      this.checked ? Color.Hex.WHITE : Color.Hex.BLACK
     );
 
     // Background color
-    if(this.checked)
-      context
-        .fillWith(fillColor)
-        .fillRect(this.rect);
+    if (this.checked) context.fillWith(fillColor).fillRect(this.rect);
 
     // Border and text
     context
       .fillWith(fillColor.inverse())
       .setFontSize(this.rect.h)
-      .drawText(this.text, new Vec2(this.rect.x + 5, this.rect.y + this.rect.h * 0.85));
+      .drawText(
+        this.text,
+        new Vec2(this.rect.x + 5, this.rect.y + this.rect.h * 0.85)
+      );
   }
 };
 
@@ -191,7 +208,7 @@ ListBox.Item = class extends Radio {
  */
 ListBox.ImageItem = class extends Radio {
   constructor(sprite) {
-    super(new Rect, "");
+    super(new Rect(), "");
     this.sprite = sprite;
   }
 
@@ -207,7 +224,7 @@ ListBox.ImageItem = class extends Radio {
  */
 ListBox.Row = class extends Layer {
   constructor() {
-    super(Layer.HBox, new Rect);
+    super(Layer.HBox, new Rect());
 
     this.eventForwarding = false;
     this.padding.xy = [0, 0];
@@ -217,7 +234,9 @@ ListBox.Row = class extends Layer {
    * Checked row
    */
   set checked(checked) {
-    _.each(this.children, child => { child.checked = checked; });
+    _.each(this.children, (child) => {
+      child.checked = checked;
+    });
   }
   get checked() {
     return _.every(this.children, { checked: true });
@@ -226,7 +245,6 @@ ListBox.Row = class extends Layer {
   /** @inheritdoc */
   onEvent(event) {
     // Check if one is selected, if yes select all
-    if(super.onEvent(event) !== false)
-      this.checked = !this.checked;
+    if (super.onEvent(event) !== false) this.checked = !this.checked;
   }
 };
