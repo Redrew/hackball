@@ -332,10 +332,10 @@ class Room {
     // Creating new player bodies and adding to players list
     for (let i = 0; i < players.length; i++) {
       var player = players[i];
-      console.log(
-        this.roles[player.team].MEDIC,
-        player in this.roles[player.team].MEDIC
-      );
+      // console.log(
+      //   this.roles[player.team].MEDIC,
+      //   player in this.roles[player.team].MEDIC
+      // );
       if (this.roles[player.team].MEDIC.includes(player)) {
         player.body = new ge.MedicBody(new Circle(60, 60, 13), new Vec2(0, 0));
       } else {
