@@ -44,8 +44,7 @@ Boot.ConnectPopup = class extends Popup {
    * @private
    */
   _connectToHost() {
-    let selectedServers = this.serverList.listbox.selected;
-    Client.connect(selectedServers ? selectedServers[1] : this.ip.text)
+    Client.connect()
       .then(() => Client.emit("setNick", this.nick.text))
       .then(() => {
         Client.user.nick = this.nick.text;
@@ -57,14 +56,6 @@ Boot.ConnectPopup = class extends Popup {
 
   /** @inheritdoc */
   init() {
-    // Server address
-    this.add(new Text(new Rect(0, 0, 0, 14), "Host:"));
-    this.ip = this.add(new TextBox(new Rect(0, 0, 0, 16), "127.0.0.1"), {
-      fill: [0.5, 0.0],
-    }).addForwarder(Message.Type.MOUSE_CLICK, () => {
-      this.serverList.listbox.deselect();
-    });
-
     // Nick field
     this.add(new Text(new Rect(0, 0, 0, 14), "Your nick:"));
     this.nick = this.add(
@@ -72,25 +63,8 @@ Boot.ConnectPopup = class extends Popup {
       { fill: [0.5, 0.0] }
     );
 
-    this.add(new Button(new Rect(0, 0, 118, 16), "Connect!"), {
+    this.add(new Button(new Rect(0, 0, 118, 16), "Go!"), {
       expand: 2,
     }).addForwarder(Message.Type.MOUSE_CLICK, this._connectToHost.bind(this));
-
-    // Options panel
-    this.serverList = this.add(
-      new Table(
-        [
-          [
-            "",
-            0.07,
-            (column) => new ListBox.ImageItem(`res/flags/${column}.png`),
-          ],
-          ["IP", 0.5],
-          ["City", 0.43],
-        ],
-        new Rect(0, 0, 0, 100)
-      ),
-      { fill: [1, 0] }
-    );
   }
 };

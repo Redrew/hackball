@@ -28,6 +28,47 @@ class Body {
     this.v.mul(0.95);
   }
   collide(obj) {}
+
+  //Bounces off entity
+  bounce(entity) {
+    // Check if one of the entities is a pickedUp ball
+    if (this.pickedUp || entity.pickedUp) {
+      return;
+    }
+    let circle = entity.body.circle,
+      entVel = entity.body.prevVel,
+      //dist = entity.body.circle.distance(this.circle),
+      xDist = this.circle.x - circle.x,
+      yDist = this.circle.y - circle.y,
+      vDif = this.v.clone().sub(entVel),
+      massRatio = entity.body.circle.r ** 2 / this.circle.r ** 2,
+      dist = (xDist ** 2 + yDist ** 2) ** 0.5,
+      intersectionRatio = Math.max(
+        (entity.body.circle.r + this.circle.r - dist) / this.circle.r,
+        0
+      );
+
+    //Ball bounces off code
+    const impulseDir = new Vec2(xDist, yDist).normalize();
+    if (vDif.dotP(impulseDir) < 0) {
+      const impulse = impulseDir
+        .clone()
+        .mulScal(entVel.add(this.v, -1.0).dotP(impulseDir) * massRatio);
+      this.v.add(impulse, 1.0);
+      //Loss of vel in collision
+      this.v.mulScal(0.7);
+    }
+    // Add velocity for being inside another entity
+    // this.v.add(impulseDir.mul(intersectionRatio * 0.01));
+    // Clip the maximum speed
+    this.v = this.v.mul(
+      Math.min(this.v.length, 48 / this.circle.r) / this.v.length
+    );
+
+    //This clears some space between the collision
+    // this.circle.add(this.v);
+  }
+
   toArray() {
     const array = new Float32Array(this.arraySize);
     array.fill(0);
@@ -75,7 +116,7 @@ class PlayerBody extends Body {
     this.speed = 1;
     this.mousePosition = new Vec2(0, 0); // in radians
     this.ball = null;
-    this.throwSpeed = 13;
+    this.throwSpeed = 8;
 
     // Sent to client
     this.team = 0;
@@ -117,6 +158,7 @@ class PlayerBody extends Body {
     this.ball = null;
     this.hasBall = false;
   }
+
   collide(entity) {
     let circle = entity.body.circle,
       v = entity.body.v,
@@ -128,40 +170,41 @@ class PlayerBody extends Body {
       isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
     // collision between player and ball on floor
-    if (isBall && !isMoving) {
+    
+    if (!this.hasBall && isBall && !isMoving) {
       // pick up corona
-      if (!this.hasBall) {
-        this.ball = entity.body;
-        this.hasBall = true;
-        entity.body.pickedUp = true;
-        entity.body.team = this.team;
-        circle.x = this.circle.x;
-        circle.y = this.circle.y;
-        v.x = this.v.x;
-        v.y = this.v.y;
- 
-      }
-    }
-
-    // collision between player and moving ball
-    if (isBall && isMoving && entity.body.team != this.team) {
-      // if player has ball or already caught corona, nothing happens
-      // otherwise, they catch corona
-      if (!this.hasBall && !this.caughtCorona) {
+      this.ball = entity.body;
+      this.hasBall = true;
+      entity.body.pickedUp = true;
+      entity.body.team = this.team;
+      circle.x = this.circle.x;
+      circle.y = this.circle.y;
+      v.x = this.v.x;
+      v.y = this.v.y;
+    } else {
+      // collision between player and moving ball FROM DIFFERENT TEAM
+      if (isBall && isMoving && entity.body.team != this.team) {
+        // if player is healthy and does not have ball, they catch corona
+        // otherwise, nothing happens
         this.caughtCorona = true;
-        // ball is no longer moving
         entity.body.moving = false;
-        // ball is on the floor again with no team
         entity.body.team = null;
       }
-    }
 
-    // collision between player and players
-    if (!isBall) {
-      // if healthy player runs into sick player, they become sick
-      if (!this.caughtCorona && entity.body.caughtCorona) {
-        this.caughtCorona = true;
-      }      
+      // collision between player and players
+      if (!isBall) {
+        // if healthy player runs into sick player, they become sick
+        if (
+          !this.caughtCorona &&
+          this.type != Body.TYPES.MEDIC &&
+          entity.body.caughtCorona
+        ) {
+          this.caughtCorona = true;
+        }
+      }
+
+      // EVERYTHING BOUNCE OFF EACH OTHER !!!!
+      this.bounce(entity);
     }
     return null;
   }
@@ -205,30 +248,19 @@ class BallBody extends Body {
       isMedic = entity.body.type === Body.TYPES.MEDIC,
       isJacinda = entity.body.type === Body.TYPES.JACINDA;
 
-    // collide between ball and ball
+    // collision
+    this.bounce(entity);
     if (isBall) {
-      // balls roll away, both balls becomes non-moving and ready for pickup
+    // balls roll away, both balls becomes non-moving and ready for pickup
 
-      //Ball bounces off code
-      const impulseDir = new Vec2(xDist, yDist).normalize();
-      const impulse = impulseDir
-        .clone()
-        .mulScal(entVel.add(this.v, -1.0).dotP(impulseDir));
-      this.v.add(impulse, 1.0);
-
-      //Loss of vel in collision
-      this.v.mulScal(0.8);
-
-      //Turned off, can be changed
-      //this.moving = false;
-      this.pickedUp = false;
-      this.team = null;
-      entity.body.moving = false;
-      entity.body.pickedUp = false;
-      entity.team = null;
+    // Turned off, can be changed
+    this.moving = false;
+    this.pickedUp = false;
+    this.team = null;
+    entity.body.moving = false;
+    entity.body.pickedUp = false;
+    entity.team = null;
     }
-    // no need to check for collision between ball and player,
-    // already done in collide() in PlayerBody
   }
 }
 
@@ -242,21 +274,6 @@ class CivilianBody extends PlayerBody {
 
     this.extraBoolAttrs.push("wearingMask");
   }
-  /**
-   * attach coronavirus to player
-   * @param {BoardBody} ball
-   */
-  _pickupCorona(ball) {
-    // to be implemented
-  }
-
-  /**
-   * throws coronavirus at target position coord
-   * @param {Vec2} targetPosition
-   */
-  _throwCorona(targetPosition) {
-    // to be implemented
-  }
 }
 
 class MedicBody extends CivilianBody {
@@ -269,19 +286,9 @@ class MedicBody extends CivilianBody {
     this.maxTime = 300;
     this.cureTimer = this.maxTime;
     this.savePlayer;
+    this.speed = 0.8;
 
     this.extraBoolAttrs.push("curingPlayer");
-  }
-  
-  /**
-   *
-   * @param {BoardBody} player
-   * @returns {BoardBody} player with wearingMask set to true
-   */
-  _curingPlayer(player) {
-    // to be implemented
-    // player.wearingMask = true;
-    // return player;
   }
   update(game) {
     super.update(game);

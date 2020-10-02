@@ -229,7 +229,7 @@ class Room {
 
     if (leftFallen > 0 && leftFallen === leftTotal) {
       this._addGoal(Room.Teams.RIGHT);
-      
+
     } else if (rightFallen > 0 && rightFallen === rightTotal) {
       this._addGoal(Room.Teams.LEFT);
     }
@@ -334,6 +334,7 @@ class Room {
 
     // Reset scoreboard
     // this._resetScoreboard();
+
   }
 
   stop() {
