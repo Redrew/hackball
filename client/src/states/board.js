@@ -154,7 +154,7 @@ Board.Projector = class extends Layer {
 
     // Render board
     context
-      .strokeWith(Color.Hex.DARK_GRAY)
+      .strokeWith(Color.Hex.WHITE)
 
       .strokeRect(this.board, 2)
       .strokeLine(
@@ -163,6 +163,26 @@ Board.Projector = class extends Layer {
         2
       );
 
+    // Render snitch area (parliament) on left side of board
+    context
+      .fillWith(Color.Hex.WHITE)
+      .fillRect(new Rect(10, 10, 60, 25));
+  
+    context
+      .fillWith(Color.Hex.RED)
+      .setFontSize(8)
+      .drawText("Parliament", new Vec2(13, 25));
+        
+    context
+      .fillWith(Color.Hex.WHITE)
+      .fillRect(new Rect(this.board.w - 70, this.board.h - 35, 60, 25));
+    
+    context
+      .fillWith(Color.Hex.BLUE)
+      .setFontSize(8)
+      .drawText("Parliament", new Vec2(this.board.w - 67, this.board.h - 20))
+        
+        
     // Render ping
     context
       .fillWith(Color.Hex.WHITE)

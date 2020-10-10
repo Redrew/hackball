@@ -201,7 +201,7 @@ class Room {
       this.omitTeam(this.players, Room.Teams.SPECTATORS)
     );
     for (let i = 0; i < this.players.length; i++) {
-      if (players[i].team === team && players[i].body.caughtCorona) {
+      if (players[i].team !== null && players[i].team === team && players[i].body.caughtCorona) {
         total += 1;
       }
     }
@@ -229,6 +229,7 @@ class Room {
 
     if (leftFallen > 0 && leftFallen === leftTotal) {
       this._addGoal(Room.Teams.RIGHT);
+
     } else if (rightFallen > 0 && rightFallen === rightTotal) {
       this._addGoal(Room.Teams.LEFT);
     }
@@ -332,7 +333,8 @@ class Room {
     );
 
     // Reset scoreboard
-    this._resetScoreboard();
+    // this._resetScoreboard();
+
   }
 
   stop() {
